@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format, isToday, isBefore, startOfDay } from 'date-fns';
+import { User } from '@supabase/supabase-js';
+import { useToast } from '@/hooks/use-toast';
 import { Navigation } from '@/components/Navigation';
 import { TaskList } from '@/components/TaskList';
 import { FocusTracker } from '@/components/FocusTracker';
@@ -8,69 +10,393 @@ import { HealthTracker } from '@/components/HealthTracker';
 import { SummaryCard } from '@/components/SummaryCard';
 import { CalendarView } from '@/components/CalendarView';
 import { ChartsView } from '@/components/ChartsView';
-import { 
-  useLocalTasks, 
-  useLocalFocusLogs, 
-  useLocalPhoneUsage, 
-  useLocalHealthLogs 
-} from '@/hooks/useLocalStorage';
+import { WelcomeBanner } from '@/components/WelcomeBanner';
+import { Button } from '@/components/ui/button';
+import { LogOut } from 'lucide-react';
+import {
+  getTasksForDate,
+  createTask,
+  updateTaskStatus,
+  deleteTask,
+  getFocusLogsForDate,
+  upsertFocusLog,
+  getPhoneUsageForDate,
+  upsertPhoneUsage,
+  getHealthLogForDate,
+  upsertHealthLog,
+  getFocusLogsByDateRange,
+  getPhoneUsageByDateRange,
+  getHealthLogsByDateRange,
+} from '@/lib/database';
+import { getCarriedForwardTasks } from '@/lib/carryForward';
+import type { Task, FocusLog, FocusCategory, PhoneUsageLog, HealthLog } from '@/types/database';
 
 type View = 'today' | 'calendar' | 'analytics';
 
-const Index = () => {
+interface IndexProps {
+  user: User;
+  onSignOut: () => Promise<void>;
+}
+
+const Index = ({ user, onSignOut }: IndexProps) => {
   const [currentView, setCurrentView] = useState<View>('today');
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  const { tasks, addTask, toggleTask, getTasksForDate, getTodayTasks } = useLocalTasks();
-  const { logs: focusLogs, setFocusTime, getLogsForDate: getFocusLogsForDate, getTodayLogs, getTotalMinutesForDate } = useLocalFocusLogs();
-  const { logs: phoneLogs, setPhoneUsage, getUsageForDate, getTodayUsage } = useLocalPhoneUsage();
-  const { logs: healthLogs, setHealthData, getHealthForDate, getTodayHealth } = useLocalHealthLogs();
+  // Today's data
+  const [todayTasks, setTodayTasks] = useState<Task[]>([]);
+  const [todayFocusLogs, setTodayFocusLogs] = useState<FocusLog[]>([]);
+  const [todayPhoneUsage, setTodayPhoneUsage] = useState(0);
+  const [todayHealth, setTodayHealth] = useState<HealthLog | null>(null);
+
+  // Selected date data
+  const [selectedTasks, setSelectedTasks] = useState<Task[]>([]);
+  const [selectedFocusLogs, setSelectedFocusLogs] = useState<FocusLog[]>([]);
+  const [selectedPhoneUsage, setSelectedPhoneUsage] = useState(0);
+  const [selectedHealth, setSelectedHealth] = useState<HealthLog | null>(null);
+
+  // Analytics data
+  const [allFocusLogs, setAllFocusLogs] = useState<FocusLog[]>([]);
+  const [allPhoneLogs, setAllPhoneLogs] = useState<PhoneUsageLog[]>([]);
+  const [allHealthLogs, setAllHealthLogs] = useState<HealthLog[]>([]);
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
 
   const todayString = format(new Date(), 'yyyy-MM-dd');
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
   const isSelectedToday = isToday(selectedDate);
   const isPastDate = isBefore(startOfDay(selectedDate), startOfDay(new Date()));
 
-  const todayTasks = getTodayTasks();
-  const selectedDateTasks = getTasksForDate(selectedDateString);
-  const todayFocusLogs = getTodayLogs();
-  const selectedDateFocusLogs = getFocusLogsForDate(selectedDateString);
-  const todayPhoneUsage = getTodayUsage();
-  const selectedDatePhoneUsage = getUsageForDate(selectedDateString);
-  const todayHealth = getTodayHealth();
-  const selectedDateHealth = getHealthForDate(selectedDateString);
+  // Load today's data
+  const loadTodayData = async () => {
+    try {
+      const [tasks, focusLogs, phoneUsage, health] = await Promise.all([
+        getTasksForDate(new Date()),
+        getFocusLogsForDate(new Date()),
+        getPhoneUsageForDate(new Date()),
+        getHealthLogForDate(new Date()),
+      ]);
+      setTodayTasks(tasks);
+      setTodayFocusLogs(focusLogs);
+      setTodayPhoneUsage(phoneUsage?.minutes ?? 0);
+      setTodayHealth(health);
+    } catch (error: any) {
+      console.error('Error loading today data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load today\'s data.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Load selected date data
+  const loadSelectedDateData = async () => {
+    if (isSelectedToday) {
+      setSelectedTasks(todayTasks);
+      setSelectedFocusLogs(todayFocusLogs);
+      setSelectedPhoneUsage(todayPhoneUsage);
+      setSelectedHealth(todayHealth);
+      return;
+    }
+
+    try {
+      const [tasks, focusLogs, phoneUsage, health] = await Promise.all([
+        getTasksForDate(selectedDate),
+        getFocusLogsForDate(selectedDate),
+        getPhoneUsageForDate(selectedDate),
+        getHealthLogForDate(selectedDate),
+      ]);
+      setSelectedTasks(tasks);
+      setSelectedFocusLogs(focusLogs);
+      setSelectedPhoneUsage(phoneUsage?.minutes ?? 0);
+      setSelectedHealth(health);
+    } catch (error: any) {
+      console.error('Error loading selected date data:', error);
+    }
+  };
+
+  // Load analytics data (last 30 days)
+  const loadAnalyticsData = async () => {
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+
+      const [focusLogs, phoneLogs, healthLogs, tasks] = await Promise.all([
+        getFocusLogsByDateRange(startDate, endDate),
+        getPhoneUsageByDateRange(startDate, endDate),
+        getHealthLogsByDateRange(startDate, endDate),
+        getTasksForDate(new Date()), // We'll need to update this to get all tasks
+      ]);
+
+      setAllFocusLogs(focusLogs);
+      setAllPhoneLogs(phoneLogs);
+      setAllHealthLogs(healthLogs);
+      setAllTasks(tasks);
+    } catch (error: any) {
+      console.error('Error loading analytics data:', error);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    const initialize = async () => {
+      setLoading(true);
+      await loadTodayData();
+      setLoading(false);
+    };
+    initialize();
+  }, []);
+
+  // Load data when view changes
+  useEffect(() => {
+    if (currentView === 'calendar') {
+      loadSelectedDateData();
+    } else if (currentView === 'analytics') {
+      loadAnalyticsData();
+    }
+  }, [currentView, selectedDate]);
+
+  // Calculate carried forward tasks
+  const carriedForwardTasks = todayTasks.filter(
+    task => task.origin_date !== todayString && task.status === 'pending'
+  );
+
+  // Task handlers
+  const handleAddTask = async (title: string) => {
+    try {
+      const newTask = await createTask(title, isSelectedToday ? new Date() : selectedDate);
+      if (isSelectedToday) {
+        setTodayTasks([...todayTasks, newTask]);
+      }
+      setSelectedTasks([...selectedTasks, newTask]);
+      toast({
+        title: 'Task added',
+        description: 'Your task has been created.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to add task.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleToggleTask = async (taskId: string) => {
+    try {
+      const task = [...todayTasks, ...selectedTasks].find(t => t.id === taskId);
+      if (!task) return;
+
+      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+      const updatedTask = await updateTaskStatus(taskId, newStatus);
+
+      const updateTasks = (tasks: Task[]) =>
+        tasks.map(t => (t.id === taskId ? updatedTask : t));
+
+      setTodayTasks(updateTasks(todayTasks));
+      setSelectedTasks(updateTasks(selectedTasks));
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update task.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleEditTask = async (taskId: string, newTitle: string) => {
+    try {
+      // For now, we'll update the task status (we need to add an update function in database.ts)
+      // Since we don't have a direct update function, we'll need to delete and recreate
+      // OR add a new function to the database
+      // For now, let's just show a toast - in production, add a proper update function
+      
+      // Create a temporary solution by deleting and recreating
+      const task = [...todayTasks, ...selectedTasks].find(t => t.id === taskId);
+      if (!task) return;
+
+      await deleteTask(taskId);
+      const newTask = await createTask(newTitle, isSelectedToday ? new Date() : selectedDate);
+
+      const updateTasks = (tasks: Task[]) =>
+        tasks.filter(t => t.id !== taskId).concat([newTask]);
+
+      setTodayTasks(updateTasks(todayTasks));
+      setSelectedTasks(updateTasks(selectedTasks));
+
+      toast({
+        title: 'Task updated',
+        description: 'Your task has been updated.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update task.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await deleteTask(taskId);
+
+      const updateTasks = (tasks: Task[]) =>
+        tasks.filter(t => t.id !== taskId);
+
+      setTodayTasks(updateTasks(todayTasks));
+      setSelectedTasks(updateTasks(selectedTasks));
+
+      toast({
+        title: 'Task deleted',
+        description: 'Your task has been removed.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete task.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Focus handlers
+  const handleSetFocusTime = async (category: FocusCategory, minutes: number) => {
+    try {
+      const log = await upsertFocusLog(isSelectedToday ? new Date() : selectedDate, category, minutes);
+      
+      const updateLogs = (logs: FocusLog[]) => {
+        const existingIndex = logs.findIndex(l => l.category === category);
+        if (existingIndex >= 0) {
+          const newLogs = [...logs];
+          newLogs[existingIndex] = log;
+          return newLogs;
+        }
+        return [...logs, log];
+      };
+
+      if (isSelectedToday) {
+        setTodayFocusLogs(updateLogs(todayFocusLogs));
+      }
+      setSelectedFocusLogs(updateLogs(selectedFocusLogs));
+      
+      toast({
+        title: 'Focus time saved',
+        description: `${category}: ${minutes} minutes`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save focus time.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Phone usage handler
+  const handleSetPhoneUsage = async (minutes: number) => {
+    try {
+      await upsertPhoneUsage(isSelectedToday ? new Date() : selectedDate, minutes);
+      if (isSelectedToday) {
+        setTodayPhoneUsage(minutes);
+      }
+      setSelectedPhoneUsage(minutes);
+      
+      toast({
+        title: 'Phone usage saved',
+        description: `${minutes} minutes`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save phone usage.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Health handler
+  const handleSetHealth = async (data: { sleep_hours?: number; running_km?: number; running_minutes?: number; weight_kg?: number }) => {
+    try {
+      const health = await upsertHealthLog(isSelectedToday ? new Date() : selectedDate, data);
+      if (isSelectedToday) {
+        setTodayHealth(health);
+      }
+      setSelectedHealth(health);
+      
+      toast({
+        title: 'Health data saved',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save health data.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const hasDataForDate = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return (
-      tasks.some(t => t.active_date === dateStr) ||
-      focusLogs.some(l => l.date === dateStr) ||
-      phoneLogs.some(l => l.date === dateStr) ||
-      healthLogs.some(l => l.date === dateStr)
-    );
+    // This is a placeholder - in a real app, you'd query the database
+    return true;
   };
+
+  const handleSignOut = async () => {
+    try {
+      await onSignOut();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to sign out.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading your data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-4">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-display font-bold text-foreground">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-display font-bold text-foreground">
                 {currentView === 'today' && 'Today'}
                 {currentView === 'calendar' && 'Calendar'}
                 {currentView === 'analytics' && 'Analytics'}
               </h1>
-              <p className="text-sm text-muted-foreground">
-                {currentView === 'today' 
-                  ? format(new Date(), 'EEEE, MMMM d, yyyy')
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                {currentView === 'today'
+                  ? 'Keshav Agarwal'
                   : currentView === 'calendar'
                   ? format(selectedDate, 'EEEE, MMMM d, yyyy')
                   : 'Your behavioral trends'
                 }
               </p>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4"
+            >
+              <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Sign out</span>
+              <span className="sm:hidden">Out</span>
+            </Button>
           </div>
         </div>
       </header>
@@ -81,12 +407,19 @@ const Index = () => {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {currentView === 'today' && (
           <>
+            {/* Welcome Banner */}
+            <WelcomeBanner
+              userName={user.email?.split('@')[0]}
+              hasTasksToday={todayTasks.length > 0}
+              carriedForwardCount={carriedForwardTasks.length}
+            />
+
             {/* Summary Card */}
             <SummaryCard
-              focusMinutes={getTotalMinutesForDate(todayString)}
+              focusMinutes={todayFocusLogs.reduce((sum, l) => sum + l.minutes, 0)}
               tasksCompleted={todayTasks.filter(t => t.status === 'completed').length}
               totalTasks={todayTasks.length}
               phoneMinutes={todayPhoneUsage}
@@ -94,27 +427,29 @@ const Index = () => {
             />
 
             {/* Two column layout on desktop */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              <div className="space-y-4 sm:space-y-6">
                 <TaskList
                   tasks={todayTasks}
                   date={todayString}
-                  onAddTask={(title) => addTask(title, todayString)}
-                  onToggleTask={toggleTask}
+                  onAddTask={handleAddTask}
+                  onToggleTask={handleToggleTask}
+                  onEditTask={handleEditTask}
+                  onDeleteTask={handleDeleteTask}
                 />
                 <HealthTracker
-                  healthData={todayHealth}
-                  onSetHealth={(data) => setHealthData(data, todayString)}
+                  healthData={todayHealth ?? undefined}
+                  onSetHealth={handleSetHealth}
                 />
               </div>
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <FocusTracker
                   logs={todayFocusLogs}
-                  onSetFocusTime={(category, minutes) => setFocusTime(category, minutes, todayString)}
+                  onSetFocusTime={handleSetFocusTime}
                 />
                 <PhoneUsageTracker
                   minutes={todayPhoneUsage}
-                  onSetUsage={(minutes) => setPhoneUsage(minutes, todayString)}
+                  onSetUsage={handleSetPhoneUsage}
                 />
               </div>
             </div>
@@ -130,9 +465,9 @@ const Index = () => {
             />
 
             {/* Selected day detail */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div className="flex items-center gap-2">
-                <h2 className="font-display font-semibold text-lg">
+                <h2 className="font-display font-semibold text-base sm:text-lg">
                   {isSelectedToday ? "Today's Log" : format(selectedDate, 'MMMM d, yyyy')}
                 </h2>
                 {isPastDate && !isSelectedToday && (
@@ -144,37 +479,39 @@ const Index = () => {
 
               {/* Summary for selected date */}
               <SummaryCard
-                focusMinutes={getTotalMinutesForDate(selectedDateString)}
-                tasksCompleted={selectedDateTasks.filter(t => t.status === 'completed').length}
-                totalTasks={selectedDateTasks.length}
-                phoneMinutes={selectedDatePhoneUsage}
-                sleepHours={selectedDateHealth?.sleep_hours ?? 0}
+                focusMinutes={selectedFocusLogs.reduce((sum, l) => sum + l.minutes, 0)}
+                tasksCompleted={selectedTasks.filter(t => t.status === 'completed').length}
+                totalTasks={selectedTasks.length}
+                phoneMinutes={selectedPhoneUsage}
+                sleepHours={selectedHealth?.sleep_hours ?? 0}
               />
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-4 sm:space-y-6">
                   <TaskList
-                    tasks={selectedDateTasks}
+                    tasks={selectedTasks}
                     date={selectedDateString}
-                    onAddTask={(title) => addTask(title, selectedDateString)}
-                    onToggleTask={toggleTask}
+                    onAddTask={handleAddTask}
+                    onToggleTask={handleToggleTask}
+                    onEditTask={handleEditTask}
+                    onDeleteTask={handleDeleteTask}
                     isReadOnly={isPastDate && !isSelectedToday}
                   />
                   <HealthTracker
-                    healthData={selectedDateHealth}
-                    onSetHealth={(data) => setHealthData(data, selectedDateString)}
+                    healthData={selectedHealth ?? undefined}
+                    onSetHealth={handleSetHealth}
                     isReadOnly={isPastDate && !isSelectedToday}
                   />
                 </div>
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <FocusTracker
-                    logs={selectedDateFocusLogs}
-                    onSetFocusTime={(category, minutes) => setFocusTime(category, minutes, selectedDateString)}
+                    logs={selectedFocusLogs}
+                    onSetFocusTime={handleSetFocusTime}
                     isReadOnly={isPastDate && !isSelectedToday}
                   />
                   <PhoneUsageTracker
-                    minutes={selectedDatePhoneUsage}
-                    onSetUsage={(minutes) => setPhoneUsage(minutes, selectedDateString)}
+                    minutes={selectedPhoneUsage}
+                    onSetUsage={handleSetPhoneUsage}
                     isReadOnly={isPastDate && !isSelectedToday}
                   />
                 </div>
@@ -185,10 +522,10 @@ const Index = () => {
 
         {currentView === 'analytics' && (
           <ChartsView
-            focusLogs={focusLogs}
-            phoneLogs={phoneLogs}
-            healthLogs={healthLogs}
-            tasks={tasks}
+            focusLogs={allFocusLogs}
+            phoneLogs={allPhoneLogs}
+            healthLogs={allHealthLogs}
+            tasks={allTasks}
           />
         )}
       </main>

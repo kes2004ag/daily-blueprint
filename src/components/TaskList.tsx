@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Check, Clock } from 'lucide-react';
+import { Plus, Check, Clock, Edit2, Trash2 } from 'lucide-react';
 import { format, parseISO, isToday, differenceInDays } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,17 +14,29 @@ interface TaskListProps {
   date: string;
   onAddTask: (title: string) => void;
   onToggleTask: (taskId: string) => void;
+  onEditTask?: (taskId: string, newTitle: string) => void;
+  onDeleteTask?: (taskId: string) => void;
   isReadOnly?: boolean;
 }
 
-export function TaskList({ tasks, date, onAddTask, onToggleTask, isReadOnly = false }: TaskListProps) {
+export function TaskList({ tasks, date, onAddTask, onToggleTask, onEditTask, onDeleteTask, isReadOnly = false }: TaskListProps) {
   const [newTask, setNewTask] = useState('');
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskTitle, setEditingTaskTitle] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newTask.trim()) {
       onAddTask(newTask.trim());
       setNewTask('');
+    }
+  };
+
+  const handleSaveEdit = (taskId: string) => {
+    if (editingTaskTitle.trim() && onEditTask) {
+      onEditTask(taskId, editingTaskTitle.trim());
+      setEditingTaskId(null);
+      setEditingTaskTitle('');
     }
   };
 
@@ -65,6 +77,8 @@ export function TaskList({ tasks, date, onAddTask, onToggleTask, isReadOnly = fa
         <div className="space-y-2">
           {pendingTasks.map((task) => {
             const age = getTaskAge(task);
+            const isEditing = editingTaskId === task.id;
+            
             return (
               <div
                 key={task.id}
@@ -78,12 +92,74 @@ export function TaskList({ tasks, date, onAddTask, onToggleTask, isReadOnly = fa
                   onCheckedChange={() => !isReadOnly && onToggleTask(task.id)}
                   disabled={isReadOnly}
                 />
-                <span className="flex-1 text-sm">{task.title}</span>
+                
+                {isEditing ? (
+                  <Input
+                    value={editingTaskTitle}
+                    onChange={(e) => setEditingTaskTitle(e.target.value)}
+                    className="flex-1 h-8"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveEdit(task.id);
+                      if (e.key === 'Escape') setEditingTaskId(null);
+                    }}
+                  />
+                ) : (
+                  <span className="flex-1 text-sm">{task.title}</span>
+                )}
+                
                 {age && (
                   <Badge variant="outline" className="text-xs bg-warning/20 border-warning/30 text-warning-foreground">
                     <Clock className="h-3 w-3 mr-1" />
                     {age}d old
                   </Badge>
+                )}
+                
+                {!isReadOnly && (
+                  <div className="flex gap-1">
+                    {isEditing ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleSaveEdit(task.id)}
+                          className="h-6 px-2 text-xs"
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditingTaskId(null)}
+                          className="h-6 px-2 text-xs"
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingTaskId(task.id);
+                            setEditingTaskTitle(task.title);
+                          }}
+                          className="h-6 px-2"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => onDeleteTask && onDeleteTask(task.id)}
+                          className="h-6 px-2 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             );
@@ -107,6 +183,16 @@ export function TaskList({ tasks, date, onAddTask, onToggleTask, isReadOnly = fa
                   <span className="flex-1 text-sm text-muted-foreground line-through">
                     {task.title}
                   </span>
+                  {!isReadOnly && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onDeleteTask && onDeleteTask(task.id)}
+                      className="h-6 px-2 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>

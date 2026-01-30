@@ -57,15 +57,15 @@ export function SummaryCard({
 
   return (
     <Card className="glass">
-      <CardContent className="p-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <CardContent className="p-3 sm:p-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           {stats.map(({ label, value, icon: Icon, color, bgColor }) => (
             <div key={label} className="text-center">
-              <div className={cn("inline-flex items-center justify-center w-10 h-10 rounded-full mb-2", bgColor)}>
-                <Icon className={cn("h-5 w-5", color)} />
+              <div className={cn("inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full mb-1.5 sm:mb-2", bgColor)}>
+                <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", color)} />
               </div>
-              <p className="text-xl font-semibold font-display">{value}</p>
-              <p className="text-xs text-muted-foreground">{label}</p>
+              <p className="text-lg sm:text-xl font-semibold font-display">{value}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{label}</p>
             </div>
           ))}
         </div>

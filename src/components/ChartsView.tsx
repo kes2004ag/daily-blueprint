@@ -1,13 +1,11 @@
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   Legend,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -77,6 +75,16 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
       km: log.running_km,
     }));
 
+  // Weight trend
+  const weightChartData = healthLogs
+    .filter(l => l.weight_kg !== undefined && l.weight_kg > 0)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-14)
+    .map(log => ({
+      date: log.date.slice(5),
+      kg: log.weight_kg,
+    }));
+
   // Task completion data
   const tasksByDate = tasks.reduce((acc, task) => {
     const date = task.active_date;
@@ -116,7 +124,7 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
           <TabsContent value="focus" className="space-y-4">
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={focusChartData}>
+                <LineChart data={focusChartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="date" className="text-xs" />
                   <YAxis className="text-xs" />
@@ -129,11 +137,11 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
                     formatter={(value: number) => [`${value}m`, '']}
                   />
                   <Legend />
-                  <Bar dataKey="GATE" stackId="a" fill={FOCUS_COLORS.GATE} name="GATE" />
-                  <Bar dataKey="DEVELOPMENT" stackId="a" fill={FOCUS_COLORS.DEVELOPMENT} name="Dev" />
-                  <Bar dataKey="RESEARCH" stackId="a" fill={FOCUS_COLORS.RESEARCH} name="Research" />
-                  <Bar dataKey="COLLEGE" stackId="a" fill={FOCUS_COLORS.COLLEGE} name="College" />
-                </BarChart>
+                  <Line type="monotone" dataKey="GATE" stroke={FOCUS_COLORS.GATE} strokeWidth={2} name="GATE" dot={{ fill: FOCUS_COLORS.GATE }} />
+                  <Line type="monotone" dataKey="DEVELOPMENT" stroke={FOCUS_COLORS.DEVELOPMENT} strokeWidth={2} name="Dev" dot={{ fill: FOCUS_COLORS.DEVELOPMENT }} />
+                  <Line type="monotone" dataKey="RESEARCH" stroke={FOCUS_COLORS.RESEARCH} strokeWidth={2} name="Research" dot={{ fill: FOCUS_COLORS.RESEARCH }} />
+                  <Line type="monotone" dataKey="COLLEGE" stroke={FOCUS_COLORS.COLLEGE} strokeWidth={2} name="College" dot={{ fill: FOCUS_COLORS.COLLEGE }} />
+                </LineChart>
               </ResponsiveContainer>
             </div>
           </TabsContent>
@@ -141,7 +149,7 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
           <TabsContent value="tasks" className="space-y-4">
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={taskChartData}>
+                <LineChart data={taskChartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="date" className="text-xs" />
                   <YAxis className="text-xs" />
@@ -153,9 +161,9 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="completed" fill="hsl(var(--success))" name="Completed" />
-                  <Bar dataKey="pending" fill="hsl(var(--warning))" name="Pending" />
-                </BarChart>
+                  <Line type="monotone" dataKey="completed" stroke="hsl(var(--success))" strokeWidth={2} name="Completed" dot={{ fill: 'hsl(var(--success))' }} />
+                  <Line type="monotone" dataKey="pending" stroke="hsl(var(--warning))" strokeWidth={2} name="Pending" dot={{ fill: 'hsl(var(--warning))' }} />
+                </LineChart>
               </ResponsiveContainer>
             </div>
           </TabsContent>
@@ -217,7 +225,7 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
               <div className="h-48">
                 <p className="text-sm text-muted-foreground mb-2">Running Distance</p>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={runningChartData}>
+                  <LineChart data={runningChartData}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="date" className="text-xs" />
                     <YAxis className="text-xs" />
@@ -229,8 +237,29 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
                       }}
                       formatter={(value: number) => [`${value} km`, 'Distance']}
                     />
-                    <Bar dataKey="km" fill="hsl(var(--success))" />
-                  </BarChart>
+                    <Line type="monotone" dataKey="km" stroke="hsl(var(--success))" strokeWidth={2} name="Distance" dot={{ fill: 'hsl(var(--success))' }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            {weightChartData.length > 0 && (
+              <div className="h-48">
+                <p className="text-sm text-muted-foreground mb-2">Body Weight</p>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={weightChartData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="date" className="text-xs" />
+                    <YAxis className="text-xs" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                      }}
+                      formatter={(value: number) => [`${value} kg`, 'Weight']}
+                    />
+                    <Line type="monotone" dataKey="kg" stroke="hsl(var(--primary))" strokeWidth={2} name="Weight" dot={{ fill: 'hsl(var(--primary))' }} />
+                  </LineChart>
                 </ResponsiveContainer>
               </div>
             )}
