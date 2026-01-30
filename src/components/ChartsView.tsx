@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   LineChart,
   Line,
@@ -10,6 +11,8 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { FocusLog, PhoneUsageLog, HealthLog, Task } from '@/types/database';
 
 interface ChartsViewProps {
@@ -27,19 +30,66 @@ const FOCUS_COLORS = {
 };
 
 export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsViewProps) {
-  // Prepare focus data by date
-  const focusByDate = focusLogs.reduce((acc, log) => {
-    if (!acc[log.date]) {
-      acc[log.date] = { date: log.date, GATE: 0, DEVELOPMENT: 0, RESEARCH: 0, COLLEGE: 0, total: 0 };
+  // State for month/year selection
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+
+  // Get month range for selected month
+  const getMonthRange = (month: number, year: number) => {
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    return { monthStart, monthEnd };
+  };
+
+  const { monthStart, monthEnd } = getMonthRange(selectedMonth, selectedYear);
+
+  // Navigation handlers
+  const handlePreviousMonth = () => {
+    if (selectedMonth === 0) {
+      setSelectedMonth(11);
+      setSelectedYear(selectedYear - 1);
+    } else {
+      setSelectedMonth(selectedMonth - 1);
     }
-    acc[log.date][log.category] = log.minutes;
-    acc[log.date].total += log.minutes;
-    return acc;
-  }, {} as Record<string, any>);
+  };
+
+  const handleNextMonth = () => {
+    if (selectedMonth === 11) {
+      setSelectedMonth(0);
+      setSelectedYear(selectedYear + 1);
+    } else {
+      setSelectedMonth(selectedMonth + 1);
+    }
+  };
+
+  // Format month display
+  const monthName = new Date(selectedYear, selectedMonth).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+
+  // Filter data by selected month
+  const isSelectedMonth = (dateStr: string) => {
+    const date = dateStr.split('T')[0];
+    return date >= monthStart && date <= monthEnd;
+  };
+
+  // Prepare focus data by date
+  const focusByDate = focusLogs
+    .filter(log => isSelectedMonth(log.date))
+    .reduce((acc, log) => {
+      if (!acc[log.date]) {
+        acc[log.date] = { date: log.date, GATE: 0, DEVELOPMENT: 0, RESEARCH: 0, COLLEGE: 0, total: 0 };
+      }
+      acc[log.date][log.category] = log.minutes;
+      acc[log.date].total += log.minutes;
+      return acc;
+    }, {} as Record<string, any>);
 
   const focusChartData = Object.values(focusByDate)
     .sort((a: any, b: any) => a.date.localeCompare(b.date))
-    .slice(-14) // Last 14 days
     .map((d: any) => ({
       ...d,
       date: d.date.slice(5), // MM-DD format
@@ -47,8 +97,8 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
 
   // Phone usage trend
   const phoneChartData = phoneLogs
+    .filter(log => isSelectedMonth(log.date))
     .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(-14)
     .map(log => ({
       date: log.date.slice(5),
       minutes: log.minutes,
@@ -57,9 +107,8 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
 
   // Sleep trend
   const sleepChartData = healthLogs
-    .filter(l => l.sleep_hours !== undefined)
+    .filter(l => l.sleep_hours !== undefined && isSelectedMonth(l.date))
     .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(-14)
     .map(log => ({
       date: log.date.slice(5),
       hours: log.sleep_hours,
@@ -67,9 +116,8 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
 
   // Running trend
   const runningChartData = healthLogs
-    .filter(l => l.running_km !== undefined && l.running_km > 0)
+    .filter(l => l.running_km !== undefined && l.running_km > 0 && isSelectedMonth(l.date))
     .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(-14)
     .map(log => ({
       date: log.date.slice(5),
       km: log.running_km,
@@ -77,31 +125,31 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
 
   // Weight trend
   const weightChartData = healthLogs
-    .filter(l => l.weight_kg !== undefined && l.weight_kg > 0)
+    .filter(l => l.weight_kg !== undefined && l.weight_kg > 0 && isSelectedMonth(l.date))
     .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(-14)
     .map(log => ({
       date: log.date.slice(5),
       kg: log.weight_kg,
     }));
 
   // Task completion data
-  const tasksByDate = tasks.reduce((acc, task) => {
-    const date = task.active_date;
-    if (!acc[date]) {
-      acc[date] = { date, completed: 0, pending: 0 };
-    }
-    if (task.status === 'completed') {
-      acc[date].completed++;
-    } else {
-      acc[date].pending++;
-    }
-    return acc;
-  }, {} as Record<string, any>);
+  const tasksByDate = tasks
+    .filter(task => isSelectedMonth(task.active_date))
+    .reduce((acc, task) => {
+      const date = task.active_date;
+      if (!acc[date]) {
+        acc[date] = { date, completed: 0, pending: 0 };
+      }
+      if (task.status === 'completed') {
+        acc[date].completed++;
+      } else {
+        acc[date].pending++;
+      }
+      return acc;
+    }, {} as Record<string, any>);
 
   const taskChartData = Object.values(tasksByDate)
     .sort((a: any, b: any) => a.date.localeCompare(b.date))
-    .slice(-14)
     .map((d: any) => ({
       ...d,
       date: d.date.slice(5),
@@ -110,7 +158,26 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
   return (
     <Card className="card-hover">
       <CardHeader>
-        <CardTitle className="font-display">Analytics</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="font-display">Analytics</CardTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePreviousMonth}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm font-medium min-w-[120px] text-center">{monthName}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNextMonth}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="focus" className="space-y-4">
