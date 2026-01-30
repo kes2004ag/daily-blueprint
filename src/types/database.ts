@@ -98,3 +98,14 @@ export interface DailySummary {
   sleepHours: number;
   runningKm: number;
 }
+
+export interface MonthlyTarget {
+  id: string;
+  user_id: string;
+  month: string; // YYYY-MM format
+  title: string;
+  description?: string | null;
+  status: 'pending' | 'completed';
+  created_at: string;
+  completed_at?: string | null;
+}

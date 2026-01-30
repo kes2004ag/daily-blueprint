@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Day, Task, FocusLog, PhoneUsageLog, HealthLog, FocusCategory } from '@/types/database';
+import type { Day, Task, FocusLog, PhoneUsageLog, HealthLog, FocusCategory, MonthlyTarget } from '@/types/database';
 import { format } from 'date-fns';
 
 // ============= DAYS =============
@@ -387,4 +387,79 @@ export async function upsertHealthLog(
     if (!result) throw new Error('Failed to create health log');
     return result;
   }
+}
+
+// ============= MONTHLY TARGETS =============
+
+export async function getMonthlyTargets(month: string): Promise<MonthlyTarget[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
+  const { data, error } = await supabase
+    .from('monthly_targets')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('month', month)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function addMonthlyTarget(
+  month: string,
+  title: string,
+  description?: string
+): Promise<MonthlyTarget> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
+  const { data: result, error } = await supabase
+    .from('monthly_targets')
+    .insert({
+      user_id: user.id,
+      month,
+      title,
+      description: description || null,
+      status: 'pending',
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  if (!result) throw new Error('Failed to create monthly target');
+  return result;
+}
+
+export async function toggleMonthlyTarget(id: string): Promise<MonthlyTarget> {
+  const { data: current } = await supabase
+    .from('monthly_targets')
+    .select('status')
+    .eq('id', id)
+    .single();
+
+  const newStatus = current?.status === 'completed' ? 'pending' : 'completed';
+
+  const { data: result, error } = await supabase
+    .from('monthly_targets')
+    .update({
+      status: newStatus,
+      completed_at: newStatus === 'completed' ? new Date().toISOString() : null,
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  if (!result) throw new Error('Failed to update monthly target');
+  return result;
+}
+
+export async function deleteMonthlyTarget(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('monthly_targets')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
 }

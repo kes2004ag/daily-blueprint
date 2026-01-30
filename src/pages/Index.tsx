@@ -10,6 +10,7 @@ import { HealthTracker } from '@/components/HealthTracker';
 import { SummaryCard } from '@/components/SummaryCard';
 import { CalendarView } from '@/components/CalendarView';
 import { ChartsView } from '@/components/ChartsView';
+import { MonthlyTargets } from '@/components/MonthlyTargets';
 import { WelcomeBanner } from '@/components/WelcomeBanner';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
@@ -27,9 +28,13 @@ import {
   getFocusLogsByDateRange,
   getPhoneUsageByDateRange,
   getHealthLogsByDateRange,
+  getMonthlyTargets,
+  addMonthlyTarget,
+  toggleMonthlyTarget,
+  deleteMonthlyTarget,
 } from '@/lib/database';
 import { getCarriedForwardTasks } from '@/lib/carryForward';
-import type { Task, FocusLog, FocusCategory, PhoneUsageLog, HealthLog } from '@/types/database';
+import type { Task, FocusLog, FocusCategory, PhoneUsageLog, HealthLog, MonthlyTarget } from '@/types/database';
 
 type View = 'today' | 'calendar' | 'analytics';
 
@@ -62,6 +67,10 @@ const Index = ({ user, onSignOut }: IndexProps) => {
   const [allHealthLogs, setAllHealthLogs] = useState<HealthLog[]>([]);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
 
+  // Monthly targets
+  const [monthlyTargets, setMonthlyTargets] = useState<MonthlyTarget[]>([]);
+  const currentMonth = format(new Date(), 'yyyy-MM');
+
   const todayString = format(new Date(), 'yyyy-MM-dd');
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
   const isSelectedToday = isToday(selectedDate);
@@ -70,16 +79,18 @@ const Index = ({ user, onSignOut }: IndexProps) => {
   // Load today's data
   const loadTodayData = async () => {
     try {
-      const [tasks, focusLogs, phoneUsage, health] = await Promise.all([
+      const [tasks, focusLogs, phoneUsage, health, targets] = await Promise.all([
         getTasksForDate(new Date()),
         getFocusLogsForDate(new Date()),
         getPhoneUsageForDate(new Date()),
         getHealthLogForDate(new Date()),
+        getMonthlyTargets(currentMonth),
       ]);
       setTodayTasks(tasks);
       setTodayFocusLogs(focusLogs);
       setTodayPhoneUsage(phoneUsage?.minutes ?? 0);
       setTodayHealth(health);
+      setMonthlyTargets(targets);
     } catch (error: any) {
       console.error('Error loading today data:', error);
       toast({
@@ -338,6 +349,53 @@ const Index = ({ user, onSignOut }: IndexProps) => {
     }
   };
 
+  // Monthly targets handlers
+  const handleAddMonthlyTarget = async (data: { title: string; description?: string }) => {
+    try {
+      const newTarget = await addMonthlyTarget(currentMonth, data.title, data.description);
+      setMonthlyTargets([...monthlyTargets, newTarget]);
+      toast({
+        title: 'Goal added',
+        description: data.title,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to add goal.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleToggleMonthlyTarget = async (id: string) => {
+    try {
+      const updated = await toggleMonthlyTarget(id);
+      setMonthlyTargets(monthlyTargets.map(t => (t.id === id ? updated : t)));
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update goal.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteMonthlyTarget = async (id: string) => {
+    try {
+      await deleteMonthlyTarget(id);
+      setMonthlyTargets(monthlyTargets.filter(t => t.id !== id));
+      toast({
+        title: 'Goal removed',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete goal.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const hasDataForDate = (date: Date) => {
     // This is a placeholder - in a real app, you'd query the database
     return true;
@@ -424,6 +482,15 @@ const Index = ({ user, onSignOut }: IndexProps) => {
               totalTasks={todayTasks.length}
               phoneMinutes={todayPhoneUsage}
               sleepHours={todayHealth?.sleep_hours ?? 0}
+            />
+
+            {/* Monthly Targets */}
+            <MonthlyTargets
+              targets={monthlyTargets}
+              onAddTarget={handleAddMonthlyTarget}
+              onToggleTarget={handleToggleMonthlyTarget}
+              onDeleteTarget={handleDeleteMonthlyTarget}
+              currentMonth={currentMonth}
             />
 
             {/* Two column layout on desktop */}
