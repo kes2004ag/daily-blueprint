@@ -499,14 +499,27 @@ export async function carryForwardMonthlyTargets(fromMonth: string, toMonth: str
   if (fetchError) throw fetchError;
   if (!pendingTargets || pendingTargets.length === 0) return [];
 
-  // Create new targets in the next month
-  const newTargets = pendingTargets.map(target => ({
-    user_id: user.id,
-    month: toMonth,
-    title: target.title,
-    description: target.description,
-    status: 'pending' as const,
-  }));
+  // Check if targets already exist in the new month to avoid duplicates
+  const { data: existingTargets } = await supabase
+    .from('monthly_targets')
+    .select('title')
+    .eq('user_id', user.id)
+    .eq('month', toMonth);
+
+  const existingTitles = new Set(existingTargets?.map(t => t.title) || []);
+
+  // Only create targets that don't already exist
+  const newTargets = pendingTargets
+    .filter(target => !existingTitles.has(target.title))
+    .map(target => ({
+      user_id: user.id,
+      month: toMonth,
+      title: target.title,
+      description: target.description,
+      status: 'pending' as const,
+    }));
+
+  if (newTargets.length === 0) return [];
 
   const { data: result, error: insertError } = await supabase
     .from('monthly_targets')

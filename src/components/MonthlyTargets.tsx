@@ -148,12 +148,18 @@ export function MonthlyTargets({
                   key={target.id}
                   className="flex items-start gap-3 p-2 rounded-lg bg-success/5 border border-success/20"
                 >
-                  <button
-                    onClick={() => onToggleTarget(target.id)}
-                    className="mt-1 text-success"
-                  >
-                    <Check className="h-4 w-4" />
-                  </button>
+                  {isCurrentMonth ? (
+                    <button
+                      onClick={() => onToggleTarget(target.id)}
+                      className="mt-1 text-success"
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <div className="mt-1 text-success">
+                      <Check className="h-4 w-4" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm line-through text-muted-foreground">
                       {target.title}
@@ -221,12 +227,18 @@ export function MonthlyTargets({
                     key={target.id}
                     className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card hover:bg-card/80 transition-colors"
                   >
-                    <button
-                      onClick={() => onToggleTarget(target.id)}
-                      className="mt-1 text-muted-foreground hover:text-primary p-1"
-                    >
-                      <div className="h-4 w-4 border rounded border-primary" />
-                    </button>
+                    {isCurrentMonth ? (
+                      <button
+                        onClick={() => onToggleTarget(target.id)}
+                        className="mt-1 text-muted-foreground hover:text-primary p-1"
+                      >
+                        <div className="h-4 w-4 border rounded border-primary" />
+                      </button>
+                    ) : (
+                      <div className="mt-1 text-muted-foreground p-1">
+                        <div className="h-4 w-4 border rounded border-muted-foreground" />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{target.title}</p>
                       {target.description && (
@@ -235,20 +247,22 @@ export function MonthlyTargets({
                         </p>
                       )}
                     </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => handleEditTarget(target.id)}
-                        className="text-muted-foreground hover:text-primary p-1"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => onDeleteTarget(target.id)}
-                        className="text-muted-foreground hover:text-destructive p-1"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    {isCurrentMonth && (
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleEditTarget(target.id)}
+                          className="text-muted-foreground hover:text-primary p-1"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => onDeleteTarget(target.id)}
+                          className="text-muted-foreground hover:text-destructive p-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )
               ))}
@@ -306,7 +320,7 @@ export function MonthlyTargets({
               </Button>
             </div>
           </div>
-        ) : (
+        ) : isCurrentMonth ? (
           <Button
             variant="outline"
             className="w-full"
@@ -315,7 +329,7 @@ export function MonthlyTargets({
             <Plus className="h-4 w-4 mr-2" />
             Add Monthly Goal
           </Button>
-        )}
+        ) : null}
 
         {/* Empty state */}
         {targets.length === 0 && !isAdding && (

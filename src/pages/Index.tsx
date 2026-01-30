@@ -156,17 +156,17 @@ const Index = ({ user, onSignOut }: IndexProps) => {
   // Load goals data
   const loadGoalsData = async () => {
     try {
-      // If viewing current month, check if we need to carry forward from last month
-      if (selectedGoalsMonth === currentMonth) {
+      // Load targets for selected month
+      const targets = await getMonthlyTargets(selectedGoalsMonth);
+      
+      // If viewing current month and no targets exist, try to carry forward from last month
+      if (selectedGoalsMonth === currentMonth && targets.length === 0) {
         const now = new Date();
         const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const lastMonthStr = format(lastMonth, 'yyyy-MM');
         
-        // Check if we already have current month targets
-        const currentTargets = await getMonthlyTargets(selectedGoalsMonth);
-        
-        // If it's a new month and we don't have any targets yet, try to carry forward
-        if (currentTargets.length === 0 && now.getDate() <= 3) {
+        // Only attempt carry-forward in first 3 days of new month
+        if (now.getDate() <= 3) {
           try {
             const carriedForward = await carryForwardMonthlyTargets(lastMonthStr, currentMonth);
             if (carriedForward.length > 0) {
@@ -174,19 +174,16 @@ const Index = ({ user, onSignOut }: IndexProps) => {
                 title: 'Goals carried forward',
                 description: `${carriedForward.length} pending goal(s) from last month`,
               });
+              setMonthlyTargets(carriedForward);
+              return;
             }
-            setMonthlyTargets(carriedForward);
-            return;
           } catch (error) {
             console.log('No targets to carry forward or error:', error);
           }
         }
-        
-        setMonthlyTargets(currentTargets);
-      } else {
-        const targets = await getMonthlyTargets(selectedGoalsMonth);
-        setMonthlyTargets(targets);
       }
+      
+      setMonthlyTargets(targets);
     } catch (error: any) {
       console.error('Error loading goals data:', error);
       toast({
