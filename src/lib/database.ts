@@ -455,6 +455,26 @@ export async function toggleMonthlyTarget(id: string): Promise<MonthlyTarget> {
   return result;
 }
 
+export async function editMonthlyTarget(
+  id: string,
+  title: string,
+  description?: string
+): Promise<MonthlyTarget> {
+  const { data: result, error } = await supabase
+    .from('monthly_targets')
+    .update({
+      title,
+      description: description || null,
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  if (!result) throw new Error('Failed to edit monthly target');
+  return result;
+}
+
 export async function deleteMonthlyTarget(id: string): Promise<void> {
   const { error } = await supabase
     .from('monthly_targets')
@@ -462,4 +482,37 @@ export async function deleteMonthlyTarget(id: string): Promise<void> {
     .eq('id', id);
 
   if (error) throw error;
+}
+
+export async function carryForwardMonthlyTargets(fromMonth: string, toMonth: string): Promise<MonthlyTarget[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
+  // Get pending targets from previous month
+  const { data: pendingTargets, error: fetchError } = await supabase
+    .from('monthly_targets')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('month', fromMonth)
+    .eq('status', 'pending');
+
+  if (fetchError) throw fetchError;
+  if (!pendingTargets || pendingTargets.length === 0) return [];
+
+  // Create new targets in the next month
+  const newTargets = pendingTargets.map(target => ({
+    user_id: user.id,
+    month: toMonth,
+    title: target.title,
+    description: target.description,
+    status: 'pending' as const,
+  }));
+
+  const { data: result, error: insertError } = await supabase
+    .from('monthly_targets')
+    .insert(newTargets)
+    .select();
+
+  if (insertError) throw insertError;
+  return result || [];
 }

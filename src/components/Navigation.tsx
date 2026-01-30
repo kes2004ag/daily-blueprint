@@ -1,8 +1,8 @@
-import { CalendarDays, BarChart3, Home } from 'lucide-react';
+import { CalendarDays, BarChart3, Home, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-type View = 'today' | 'calendar' | 'analytics';
+type View = 'today' | 'calendar' | 'analytics' | 'goals';
 
 interface NavigationProps {
   currentView: View;
@@ -12,6 +12,7 @@ interface NavigationProps {
 export function Navigation({ currentView, onViewChange }: NavigationProps) {
   const navItems = [
     { id: 'today' as View, label: 'Today', icon: Home },
+    { id: 'goals' as View, label: 'Goals', icon: Target },
     { id: 'calendar' as View, label: 'Calendar', icon: CalendarDays },
     { id: 'analytics' as View, label: 'Analytics', icon: BarChart3 },
   ];

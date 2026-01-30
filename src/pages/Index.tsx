@@ -30,13 +30,15 @@ import {
   getHealthLogsByDateRange,
   getMonthlyTargets,
   addMonthlyTarget,
+  editMonthlyTarget,
   toggleMonthlyTarget,
   deleteMonthlyTarget,
+  carryForwardMonthlyTargets,
 } from '@/lib/database';
 import { getCarriedForwardTasks } from '@/lib/carryForward';
 import type { Task, FocusLog, FocusCategory, PhoneUsageLog, HealthLog, MonthlyTarget } from '@/types/database';
 
-type View = 'today' | 'calendar' | 'analytics';
+type View = 'today' | 'calendar' | 'analytics' | 'goals';
 
 interface IndexProps {
   user: User;
@@ -69,6 +71,7 @@ const Index = ({ user, onSignOut }: IndexProps) => {
 
   // Monthly targets
   const [monthlyTargets, setMonthlyTargets] = useState<MonthlyTarget[]>([]);
+  const [selectedGoalsMonth, setSelectedGoalsMonth] = useState(format(new Date(), 'yyyy-MM'));
   const currentMonth = format(new Date(), 'yyyy-MM');
 
   const todayString = format(new Date(), 'yyyy-MM-dd');
@@ -150,6 +153,50 @@ const Index = ({ user, onSignOut }: IndexProps) => {
     }
   };
 
+  // Load goals data
+  const loadGoalsData = async () => {
+    try {
+      // If viewing current month, check if we need to carry forward from last month
+      if (selectedGoalsMonth === currentMonth) {
+        const now = new Date();
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthStr = format(lastMonth, 'yyyy-MM');
+        
+        // Check if we already have current month targets
+        const currentTargets = await getMonthlyTargets(selectedGoalsMonth);
+        
+        // If it's a new month and we don't have any targets yet, try to carry forward
+        if (currentTargets.length === 0 && now.getDate() <= 3) {
+          try {
+            const carriedForward = await carryForwardMonthlyTargets(lastMonthStr, currentMonth);
+            if (carriedForward.length > 0) {
+              toast({
+                title: 'Goals carried forward',
+                description: `${carriedForward.length} pending goal(s) from last month`,
+              });
+            }
+            setMonthlyTargets(carriedForward);
+            return;
+          } catch (error) {
+            console.log('No targets to carry forward or error:', error);
+          }
+        }
+        
+        setMonthlyTargets(currentTargets);
+      } else {
+        const targets = await getMonthlyTargets(selectedGoalsMonth);
+        setMonthlyTargets(targets);
+      }
+    } catch (error: any) {
+      console.error('Error loading goals data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load goals.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Initial load
   useEffect(() => {
     const initialize = async () => {
@@ -166,8 +213,10 @@ const Index = ({ user, onSignOut }: IndexProps) => {
       loadSelectedDateData();
     } else if (currentView === 'analytics') {
       loadAnalyticsData();
+    } else if (currentView === 'goals') {
+      loadGoalsData();
     }
-  }, [currentView, selectedDate]);
+  }, [currentView, selectedDate, selectedGoalsMonth]);
 
   // Calculate carried forward tasks
   const carriedForwardTasks = todayTasks.filter(
@@ -352,7 +401,7 @@ const Index = ({ user, onSignOut }: IndexProps) => {
   // Monthly targets handlers
   const handleAddMonthlyTarget = async (data: { title: string; description?: string }) => {
     try {
-      const newTarget = await addMonthlyTarget(currentMonth, data.title, data.description);
+      const newTarget = await addMonthlyTarget(selectedGoalsMonth, data.title, data.description);
       setMonthlyTargets([...monthlyTargets, newTarget]);
       toast({
         title: 'Goal added',
@@ -362,6 +411,23 @@ const Index = ({ user, onSignOut }: IndexProps) => {
       toast({
         title: 'Error',
         description: 'Failed to add goal.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleEditMonthlyTarget = async (id: string, title: string, description?: string) => {
+    try {
+      const updated = await editMonthlyTarget(id, title, description);
+      setMonthlyTargets(monthlyTargets.map(t => (t.id === id ? updated : t)));
+      toast({
+        title: 'Goal updated',
+        description: title,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update goal.',
         variant: 'destructive',
       });
     }
@@ -433,12 +499,15 @@ const Index = ({ user, onSignOut }: IndexProps) => {
             <div>
               <h1 className="text-lg sm:text-xl md:text-2xl font-display font-bold text-foreground">
                 {currentView === 'today' && 'Today'}
+                {currentView === 'goals' && 'Monthly Goals'}
                 {currentView === 'calendar' && 'Calendar'}
                 {currentView === 'analytics' && 'Analytics'}
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                 {currentView === 'today'
                   ? 'Keshav Agarwal'
+                  : currentView === 'goals'
+                  ? 'Set and track your monthly objectives'
                   : currentView === 'calendar'
                   ? format(selectedDate, 'EEEE, MMMM d, yyyy')
                   : 'Your behavioral trends'
@@ -482,15 +551,6 @@ const Index = ({ user, onSignOut }: IndexProps) => {
               totalTasks={todayTasks.length}
               phoneMinutes={todayPhoneUsage}
               sleepHours={todayHealth?.sleep_hours ?? 0}
-            />
-
-            {/* Monthly Targets */}
-            <MonthlyTargets
-              targets={monthlyTargets}
-              onAddTarget={handleAddMonthlyTarget}
-              onToggleTarget={handleToggleMonthlyTarget}
-              onDeleteTarget={handleDeleteMonthlyTarget}
-              currentMonth={currentMonth}
             />
 
             {/* Two column layout on desktop */}
@@ -593,6 +653,19 @@ const Index = ({ user, onSignOut }: IndexProps) => {
             phoneLogs={allPhoneLogs}
             healthLogs={allHealthLogs}
             tasks={allTasks}
+          />
+        )}
+
+        {currentView === 'goals' && (
+          <MonthlyTargets
+            targets={monthlyTargets}
+            onAddTarget={handleAddMonthlyTarget}
+            onEditTarget={handleEditMonthlyTarget}
+            onToggleTarget={handleToggleMonthlyTarget}
+            onDeleteTarget={handleDeleteMonthlyTarget}
+            currentMonth={currentMonth}
+            selectedMonth={selectedGoalsMonth}
+            onMonthChange={setSelectedGoalsMonth}
           />
         )}
       </main>
