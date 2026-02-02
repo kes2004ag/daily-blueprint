@@ -493,9 +493,9 @@ const Index = ({ user, onSignOut }: IndexProps) => {
       className="min-h-screen pb-20 md:pb-4"
       style={{
         backgroundImage: currentView === 'today' 
-          ? 'url(/TODAY.jpg)'
+          ? 'url(/today.jpg)'
           : currentView === 'goals'
-          ? 'url(/GOALS.jpg)'
+          ? 'url(/goals.jpg)'
           : undefined,
         backgroundAttachment: 'fixed',
         backgroundSize: 'contain',
