@@ -8,118 +8,118 @@
 
 @layer base {
   :root {
-    /* Deep charcoal background - sophisticated, not harsh */
-    --background: 210 10% 13%;
-    --foreground: 200 8% 92%;
+    /* Rich navy background - premium, modern feel */
+    --background: 220 20% 9%;
+    --foreground: 210 15% 95%;
 
-    /* Slightly lighter cards */
-    --card: 210 10% 16%;
-    --card-foreground: 200 8% 92%;
+    /* Elevated cards with subtle gradient */
+    --card: 220 18% 14%;
+    --card-foreground: 210 15% 95%;
 
-    --popover: 210 10% 16%;
-    --popover-foreground: 200 8% 92%;
+    --popover: 220 18% 14%;
+    --popover-foreground: 210 15% 95%;
 
-    /* Teal primary - calming, productive, modern */
-    --primary: 186 65% 50%;
-    --primary-foreground: 210 10% 13%;
+    /* Vibrant cyan primary - energetic and modern */
+    --primary: 185 100% 45%;
+    --primary-foreground: 220 20% 9%;
 
-    /* Subtle dark secondary */
-    --secondary: 210 10% 20%;
-    --secondary-foreground: 200 8% 92%;
+    /* Elegant purple secondary */
+    --secondary: 260 85% 60%;
+    --secondary-foreground: 220 20% 9%;
 
-    /* Muted tones */
-    --muted: 210 10% 25%;
-    --muted-foreground: 200 8% 70%;
+    /* Muted tones - better contrast */
+    --muted: 220 15% 35%;
+    --muted-foreground: 210 12% 75%;
 
-    /* Accent - warm coral/peach */
-    --accent: 12 70% 65%;
-    --accent-foreground: 210 10% 13%;
+    /* Accent - vibrant magenta/pink */
+    --accent: 320 90% 60%;
+    --accent-foreground: 220 20% 9%;
 
-    /* Destructive - warm red */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 10% 13%;
+    /* Destructive - vivid red */
+    --destructive: 0 95% 55%;
+    --destructive-foreground: 220 20% 9%;
 
-    --border: 210 10% 22%;
-    --input: 210 10% 22%;
-    --ring: 186 65% 50%;
+    --border: 220 16% 22%;
+    --input: 220 16% 18%;
+    --ring: 185 100% 45%;
 
     --radius: 0.75rem;
 
-    /* Focus category colors - sophisticated palette */
-    --focus-gate: 260 70% 55%;
-    --focus-development: 186 65% 50%;
-    --focus-research: 250 75% 55%;
-    --focus-college: 25 90% 55%;
+    /* Focus category colors - vibrant palette */
+    --focus-gate: 270 85% 55%;
+    --focus-development: 185 100% 45%;
+    --focus-research: 280 90% 60%;
+    --focus-college: 35 95% 55%;
 
     /* Chart colors - modern and vibrant */
-    --chart-1: 186 65% 50%;
-    --chart-2: 260 70% 55%;
-    --chart-3: 250 75% 55%;
-    --chart-4: 25 90% 55%;
-    --chart-5: 145 60% 50%;
+    --chart-1: 185 100% 45%;
+    --chart-2: 270 85% 55%;
+    --chart-3: 320 90% 60%;
+    --chart-4: 35 95% 55%;
+    --chart-5: 145 80% 55%;
 
     /* Sidebar */
-    --sidebar-background: 210 10% 14%;
-    --sidebar-foreground: 200 8% 92%;
-    --sidebar-primary: 186 65% 50%;
-    --sidebar-primary-foreground: 210 10% 13%;
-    --sidebar-accent: 210 10% 22%;
-    --sidebar-accent-foreground: 200 8% 92%;
-    --sidebar-border: 210 10% 22%;
-    --sidebar-ring: 186 65% 50%;
+    --sidebar-background: 220 20% 11%;
+    --sidebar-foreground: 210 15% 95%;
+    --sidebar-primary: 185 100% 45%;
+    --sidebar-primary-foreground: 220 20% 9%;
+    --sidebar-accent: 220 16% 22%;
+    --sidebar-accent-foreground: 210 15% 95%;
+    --sidebar-border: 220 16% 22%;
+    --sidebar-ring: 185 100% 45%;
 
-    /* Success state - emerald green */
-    --success: 145 60% 50%;
-    --success-foreground: 210 10% 13%;
+    /* Success state - bright emerald green */
+    --success: 140 80% 50%;
+    --success-foreground: 220 20% 9%;
 
-    /* Warning state - vibrant amber */
-    --warning: 35 80% 55%;
-    --warning-foreground: 210 10% 13%;
+    /* Warning state - bright amber */
+    --warning: 40 95% 55%;
+    --warning-foreground: 220 20% 9%;
   }
 
   .dark {
-    --background: 210 10% 13%;
-    --foreground: 200 8% 92%;
+    --background: 220 20% 9%;
+    --foreground: 210 15% 95%;
 
-    --card: 210 10% 16%;
-    --card-foreground: 200 8% 92%;
+    --card: 220 18% 14%;
+    --card-foreground: 210 15% 95%;
 
-    --popover: 210 10% 16%;
-    --popover-foreground: 200 8% 92%;
+    --popover: 220 18% 14%;
+    --popover-foreground: 210 15% 95%;
 
-    --primary: 186 65% 50%;
-    --primary-foreground: 210 10% 13%;
+    --primary: 185 100% 45%;
+    --primary-foreground: 220 20% 9%;
 
-    --secondary: 210 10% 20%;
-    --secondary-foreground: 200 8% 92%;
+    --secondary: 260 85% 60%;
+    --secondary-foreground: 220 20% 9%;
 
-    --muted: 210 10% 25%;
-    --muted-foreground: 200 8% 70%;
+    --muted: 220 15% 35%;
+    --muted-foreground: 210 12% 75%;
 
-    --accent: 12 70% 65%;
-    --accent-foreground: 210 10% 13%;
+    --accent: 320 90% 60%;
+    --accent-foreground: 220 20% 9%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 10% 13%;
+    --destructive: 0 95% 55%;
+    --destructive-foreground: 220 20% 9%;
 
-    --border: 210 10% 22%;
-    --input: 210 10% 22%;
-    --ring: 186 65% 50%;
+    --border: 220 16% 22%;
+    --input: 220 16% 18%;
+    --ring: 185 100% 45%;
 
-    --sidebar-background: 210 10% 14%;
-    --sidebar-foreground: 200 8% 92%;
-    --sidebar-primary: 186 65% 50%;
-    --sidebar-primary-foreground: 210 10% 13%;
-    --sidebar-accent: 210 10% 22%;
-    --sidebar-accent-foreground: 200 8% 92%;
-    --sidebar-border: 210 10% 22%;
-    --sidebar-ring: 186 65% 50%;
+    --sidebar-background: 220 20% 11%;
+    --sidebar-foreground: 210 15% 95%;
+    --sidebar-primary: 185 100% 45%;
+    --sidebar-primary-foreground: 220 20% 9%;
+    --sidebar-accent: 220 16% 22%;
+    --sidebar-accent-foreground: 210 15% 95%;
+    --sidebar-border: 220 16% 22%;
+    --sidebar-ring: 185 100% 45%;
 
-    --success: 145 60% 50%;
-    --success-foreground: 210 10% 13%;
+    --success: 140 80% 50%;
+    --success-foreground: 220 20% 9%;
 
-    --warning: 35 80% 55%;
-    --warning-foreground: 210 10% 13%;
+    --warning: 40 95% 55%;
+    --warning-foreground: 220 20% 9%;
   }
 }
 
@@ -162,6 +162,11 @@
 
   .glass {
     @apply bg-card/80 backdrop-blur-sm border border-border/50;
+  }
+
+  /* Transparent cards for wallpaper views */
+  .transparent-card {
+    @apply bg-card/50 backdrop-blur-sm border border-border/30;
   }
 }
 

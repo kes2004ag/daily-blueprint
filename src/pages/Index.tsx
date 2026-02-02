@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { format, isToday, isBefore, startOfDay } from 'date-fns';
 import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
+import { WallpaperContext } from '@/hooks/useWallpaperView';
 import { Navigation } from '@/components/Navigation';
 import { TaskList } from '@/components/TaskList';
 import { FocusTracker } from '@/components/FocusTracker';
@@ -488,9 +489,29 @@ const Index = ({ user, onSignOut }: IndexProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-4">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border">
+    <div 
+      className="min-h-screen pb-20 md:pb-4"
+      style={{
+        backgroundImage: currentView === 'today' 
+          ? 'url(/TODAY.jpg)'
+          : currentView === 'goals'
+          ? 'url(/GOALS.jpg)'
+          : undefined,
+        backgroundAttachment: 'fixed',
+        backgroundSize: 'contain',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        backgroundColor: currentView === 'today' || currentView === 'goals' ? 'hsl(var(--background))' : 'hsl(var(--background))',
+      }}
+    >
+      {/* Background overlay for 'today' and 'goals' views */}
+      {(currentView === 'today' || currentView === 'goals') && (
+        <div className="fixed inset-0 bg-black/40 pointer-events-none z-0" />
+      )}
+      
+      <div className="relative z-10">
+        {/* Header */}
+        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -532,6 +553,7 @@ const Index = ({ user, onSignOut }: IndexProps) => {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+        <WallpaperContext.Provider value={currentView === 'today' || currentView === 'goals'}>
         {currentView === 'today' && (
           <>
             {/* Welcome Banner */}
@@ -665,11 +687,13 @@ const Index = ({ user, onSignOut }: IndexProps) => {
             onMonthChange={setSelectedGoalsMonth}
           />
         )}
+        </WallpaperContext.Provider>
       </main>
 
       {/* Mobile Navigation */}
       <div className="md:hidden">
         <Navigation currentView={currentView} onViewChange={setCurrentView} />
+      </div>
       </div>
     </div>
   );
