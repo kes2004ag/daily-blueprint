@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Moon, Activity, Scale } from 'lucide-react';
+import { Moon, Activity, Scale, Heart } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import type { HealthLog } from '@/types/database';
 
 interface HealthTrackerProps {
@@ -39,149 +40,149 @@ export function HealthTracker({ healthData, onSetHealth, isReadOnly = false }: H
   };
 
   const getSleepQuality = (hours: number) => {
-    if (hours >= 7 && hours <= 9) return { label: 'Optimal', color: 'text-success font-semibold' };
-    if (hours >= 6 && hours < 7) return { label: 'Okay', color: 'text-primary font-semibold' };
-    if (hours < 6) return { label: 'Low', color: 'text-destructive font-semibold' };
-    return { label: 'Too much', color: 'text-warning font-semibold' };
+    if (hours >= 7 && hours <= 9) return { label: 'Optimal', color: 'text-success bg-success/10 border-success/25' };
+    if (hours >= 6 && hours < 7) return { label: 'Okay', color: 'text-primary bg-primary/10 border-primary/25' };
+    if (hours < 6) return { label: 'Low', color: 'text-destructive bg-destructive/10 border-destructive/25' };
+    return { label: 'High', color: 'text-warning-foreground bg-warning/10 border-warning/25' };
   };
 
   const sleepHours = healthData?.sleep_hours ?? 0;
   const runningKm = healthData?.running_km ?? 0;
   const sleepQuality = getSleepQuality(sleepHours);
 
+  const healthItems = [
+    {
+      id: 'sleep',
+      label: 'Sleep',
+      icon: Moon,
+      iconColor: 'text-indigo-500',
+      bgColor: 'bg-indigo-500/10 border-indigo-500/20',
+      value: sleepHours,
+      displayValue: `${sleepHours}h`,
+      badge: sleepHours > 0 ? sleepQuality : null,
+      isEditing: isEditingSleep,
+      setIsEditing: setIsEditingSleep,
+      inputValue: sleepInput,
+      setInputValue: setSleepInput,
+      onSave: handleSaveSleep,
+      placeholder: 'Hours',
+      step: '0.5',
+    },
+    {
+      id: 'running',
+      label: 'Running',
+      icon: Activity,
+      iconColor: 'text-rose-500',
+      bgColor: 'bg-rose-500/10 border-rose-500/20',
+      value: runningKm,
+      displayValue: `${runningKm} km`,
+      badge: runningKm >= 5 ? { label: 'Great', color: 'text-success bg-success/10 border-success/25' } : null,
+      isEditing: isEditingRunning,
+      setIsEditing: setIsEditingRunning,
+      inputValue: runningKmInput,
+      setInputValue: setRunningKmInput,
+      onSave: handleSaveRunning,
+      placeholder: 'Kilometers',
+      step: '0.1',
+    },
+    {
+      id: 'weight',
+      label: 'Weight',
+      icon: Scale,
+      iconColor: 'text-teal-500',
+      bgColor: 'bg-teal-500/10 border-teal-500/20',
+      value: healthData?.weight_kg ?? 0,
+      displayValue: healthData?.weight_kg ? `${healthData.weight_kg} kg` : 'Not set',
+      badge: null,
+      isEditing: isEditingWeight,
+      setIsEditing: setIsEditingWeight,
+      inputValue: weightInput,
+      setInputValue: setWeightInput,
+      onSave: handleSaveWeight,
+      placeholder: 'Kilograms',
+      step: '0.1',
+    },
+  ];
+
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-3">
-        <CardTitle className="font-display">Health</CardTitle>
+    <Card className="overflow-hidden border-0 bg-gradient-to-br from-card to-card/80 shadow-xl">
+      <CardHeader className="pb-3 border-b border-border/30">
+        <CardTitle className="font-display text-lg flex items-center gap-2">
+          <Heart className="h-5 w-5 text-rose-500" />
+          Health
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Sleep tracking */}
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2 text-muted-foreground">
-            <Moon className="h-4 w-4" />
-            Sleep
-          </Label>
-          {isEditingSleep ? (
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                step="0.5"
-                value={sleepInput}
-                onChange={(e) => setSleepInput(e.target.value)}
-                className="flex-1"
-                placeholder="Hours"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveSleep();
-                  if (e.key === 'Escape') setIsEditingSleep(false);
-                }}
-              />
-              <Button size="sm" onClick={handleSaveSleep}>Save</Button>
+      <CardContent className="p-4 space-y-3">
+        {healthItems.map((item) => {
+          const Icon = item.icon;
+          
+          return (
+            <div key={item.id} className={cn(
+              "p-3.5 rounded-xl border transition-all",
+              item.bgColor
+            )}>
+              {item.isEditing ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Icon className={cn("h-4 w-4", item.iconColor)} />
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      step={item.step}
+                      value={item.inputValue}
+                      onChange={(e) => item.setInputValue(e.target.value)}
+                      className="flex-1 h-10"
+                      placeholder={item.placeholder}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') item.onSave();
+                        if (e.key === 'Escape') item.setIsEditing(false);
+                      }}
+                    />
+                    <Button 
+                      size="sm" 
+                      onClick={item.onSave}
+                      className="h-10 px-4"
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  className="w-full flex items-center justify-between group"
+                  onClick={() => {
+                    if (!isReadOnly) {
+                      item.setInputValue(item.value.toString());
+                      item.setIsEditing(true);
+                    }
+                  }}
+                  disabled={isReadOnly}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon className={cn("h-4 w-4", item.iconColor)} />
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {item.badge && (
+                      <Badge className={cn("text-[10px] font-semibold border px-2 py-0", item.badge.color)}>
+                        {item.badge.label}
+                      </Badge>
+                    )}
+                    <span className={cn(
+                      "font-mono font-semibold text-sm transition-colors",
+                      !isReadOnly && "group-hover:text-primary"
+                    )}>
+                      {item.displayValue}
+                    </span>
+                  </div>
+                </button>
+              )}
             </div>
-          ) : (
-            <Button
-              variant="outline"
-              className="w-full justify-between"
-              onClick={() => {
-                if (!isReadOnly) {
-                  setSleepInput(sleepHours.toString());
-                  setIsEditingSleep(true);
-                }
-              }}
-              disabled={isReadOnly}
-            >
-              <span>Hours slept</span>
-              <span className="flex items-center gap-2">
-                <span className="font-mono">{sleepHours}h</span>
-                {sleepHours > 0 && sleepQuality.label !== 'Low' && (
-                  <span className={`text-xs ${sleepQuality.color}`}>({sleepQuality.label})</span>
-                )}
-              </span>
-            </Button>
-          )}
-        </div>
-
-        {/* Running tracking */}
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2 text-muted-foreground">
-            <Activity className="h-4 w-4" />
-            Running
-          </Label>
-          {isEditingRunning ? (
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                step="0.1"
-                value={runningKmInput}
-                onChange={(e) => setRunningKmInput(e.target.value)}
-                className="flex-1"
-                placeholder="Kilometers"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveRunning();
-                  if (e.key === 'Escape') setIsEditingRunning(false);
-                }}
-              />
-              <Button size="sm" onClick={handleSaveRunning}>Save</Button>
-            </div>
-          ) : (
-            <Button
-              variant="outline"
-              className="w-full justify-between"
-              onClick={() => {
-                if (!isReadOnly) {
-                  setRunningKmInput(runningKm.toString());
-                  setIsEditingRunning(true);
-                }
-              }}
-              disabled={isReadOnly}
-            >
-              <span>Distance</span>
-              <span className="font-mono">{runningKm} km</span>
-            </Button>
-          )}
-        </div>
-
-        {/* Weight tracking */}
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2 text-muted-foreground">
-            <Scale className="h-4 w-4" />
-            Weight
-          </Label>
-          {isEditingWeight ? (
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                step="0.1"
-                value={weightInput}
-                onChange={(e) => setWeightInput(e.target.value)}
-                className="flex-1"
-                placeholder="Kilograms"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveWeight();
-                  if (e.key === 'Escape') setIsEditingWeight(false);
-                }}
-              />
-              <Button size="sm" onClick={handleSaveWeight}>Save</Button>
-            </div>
-          ) : (
-            <Button
-              variant="outline"
-              className="w-full justify-between"
-              onClick={() => {
-                if (!isReadOnly) {
-                  setWeightInput((healthData?.weight_kg ?? '').toString());
-                  setIsEditingWeight(true);
-                }
-              }}
-              disabled={isReadOnly}
-            >
-              <span>Body Weight</span>
-              <span className="font-mono">{healthData?.weight_kg ? `${healthData.weight_kg} kg` : 'Not set'}</span>
-            </Button>
-          )}
-        </div>
+          );
+        })}
       </CardContent>
     </Card>
   );

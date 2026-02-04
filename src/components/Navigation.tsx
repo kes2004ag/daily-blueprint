@@ -19,24 +19,40 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 md:static md:bottom-auto z-50">
-      <div className="bg-card/95 backdrop-blur-lg border-t md:border-t-0 md:border-b border-border shadow-lg md:shadow-none">
+      <div className="bg-card/95 backdrop-blur-xl border-t md:border-t-0 md:border-b border-border/50 shadow-xl md:shadow-none">
         <div className="max-w-4xl mx-auto px-2 sm:px-4">
-          <div className="flex items-center justify-around md:justify-start md:gap-2 py-2 sm:py-3">
+          <div className="flex items-center justify-around md:justify-start md:gap-1 py-2 sm:py-3">
             {navItems.map(({ id, label, icon: Icon }) => (
-              <Button
+              <button
                 key={id}
-                variant={currentView === id ? 'default' : 'ghost'}
-                size="sm"
                 onClick={() => onViewChange(id)}
                 className={cn(
-                  "flex-col md:flex-row gap-1 h-auto py-3 px-4 md:px-6 min-w-[80px] md:min-w-0",
-                  "touch-manipulation", // Better touch response
-                  currentView === id && "shadow-lg"
+                  "relative flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2",
+                  "h-auto py-2.5 px-4 md:px-5 min-w-[72px] md:min-w-0",
+                  "rounded-xl md:rounded-lg",
+                  "transition-all duration-200 ease-out",
+                  "touch-manipulation select-none",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                  currentView === id 
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 scale-[1.02]" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50 active:scale-95"
                 )}
               >
-                <Icon className="h-5 w-5 md:h-4 md:w-4" />
-                <span className="text-xs md:text-sm font-medium">{label}</span>
-              </Button>
+                <Icon className={cn(
+                  "h-5 w-5 md:h-4 md:w-4 transition-transform",
+                  currentView === id && "scale-110"
+                )} />
+                <span className={cn(
+                  "text-[11px] md:text-sm font-medium",
+                  currentView === id && "font-semibold"
+                )}>
+                  {label}
+                </span>
+                {/* Active indicator dot for mobile */}
+                {currentView === id && (
+                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary-foreground md:hidden" />
+                )}
+              </button>
             ))}
           </div>
         </div>
