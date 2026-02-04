@@ -490,7 +490,7 @@ const Index = ({ user, onSignOut }: IndexProps) => {
 
   return (
     <div 
-      className="min-h-screen pb-20 md:pb-4"
+      className="min-h-screen pb-24 md:pb-6"
       style={{
         backgroundImage: currentView === 'today' 
           ? 'url(/today.jpg)'
@@ -498,53 +498,52 @@ const Index = ({ user, onSignOut }: IndexProps) => {
           ? 'url(/goals.jpg)'
           : undefined,
         backgroundAttachment: 'fixed',
-        backgroundSize: 'contain',
+        backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center',
-        backgroundColor: currentView === 'today' || currentView === 'goals' ? 'hsl(var(--background))' : 'hsl(var(--background))',
+        backgroundColor: 'hsl(var(--background))',
       }}
     >
       {/* Background overlay for 'today' and 'goals' views */}
       {(currentView === 'today' || currentView === 'goals') && (
-        <div className="fixed inset-0 bg-black/40 pointer-events-none z-0" />
+        <div className="fixed inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60 pointer-events-none z-0" />
       )}
       
       <div className="relative z-10">
         {/* Header */}
-        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg sm:text-xl md:text-2xl font-display font-bold text-foreground">
-                {currentView === 'today' && 'Today'}
-                {currentView === 'goals' && 'Monthly Goals'}
-                {currentView === 'calendar' && 'Calendar'}
-                {currentView === 'analytics' && 'Analytics'}
-              </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                {currentView === 'today'
-                  ? 'Keshav Agarwal'
-                  : currentView === 'goals'
-                  ? 'Set and track your monthly objectives'
-                  : currentView === 'calendar'
-                  ? format(selectedDate, 'EEEE, MMMM d, yyyy')
-                  : 'Your behavioral trends'
-                }
-              </p>
+        <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border/50 shadow-sm">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-display font-bold text-foreground tracking-tight">
+                  {currentView === 'today' && 'Today'}
+                  {currentView === 'goals' && 'Monthly Goals'}
+                  {currentView === 'calendar' && 'Calendar'}
+                  {currentView === 'analytics' && 'Analytics'}
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                  {currentView === 'today'
+                    ? format(new Date(), 'EEEE, MMMM d')
+                    : currentView === 'goals'
+                    ? 'Set and track your monthly objectives'
+                    : currentView === 'calendar'
+                    ? format(selectedDate, 'EEEE, MMMM d, yyyy')
+                    : 'Your behavioral trends'
+                  }
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSignOut}
+                className="flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4 h-9 rounded-lg border-border/60 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all"
+              >
+                <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Sign out</span>
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSignOut}
-              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4"
-            >
-              <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Sign out</span>
-              <span className="sm:hidden">Out</span>
-            </Button>
           </div>
-        </div>
-      </header>
+        </header>
 
       {/* Desktop Navigation */}
       <div className="hidden md:block">
@@ -552,7 +551,7 @@ const Index = ({ user, onSignOut }: IndexProps) => {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-5 sm:space-y-8">
         <WallpaperContext.Provider value={currentView === 'today' || currentView === 'goals'}>
         {currentView === 'today' && (
           <>

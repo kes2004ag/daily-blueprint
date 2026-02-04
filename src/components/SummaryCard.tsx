@@ -31,6 +31,7 @@ export function SummaryCard({
       icon: Clock,
       color: 'text-primary',
       bgColor: 'bg-primary/10',
+      ringColor: 'ring-primary/20',
     },
     {
       label: 'Tasks Done',
@@ -38,13 +39,15 @@ export function SummaryCard({
       icon: CheckCircle,
       color: 'text-success',
       bgColor: 'bg-success/10',
+      ringColor: 'ring-success/20',
     },
     {
       label: 'Screen Time',
       value: formatTime(phoneMinutes),
       icon: Smartphone,
       color: phoneMinutes > 180 ? 'text-destructive' : 'text-muted-foreground',
-      bgColor: phoneMinutes > 180 ? 'bg-destructive/10' : 'bg-muted',
+      bgColor: phoneMinutes > 180 ? 'bg-destructive/10' : 'bg-muted/50',
+      ringColor: phoneMinutes > 180 ? 'ring-destructive/20' : 'ring-border',
     },
     {
       label: 'Sleep',
@@ -52,20 +55,30 @@ export function SummaryCard({
       icon: Moon,
       color: sleepHours >= 7 ? 'text-primary' : 'text-warning-foreground',
       bgColor: sleepHours >= 7 ? 'bg-primary/10' : 'bg-warning/10',
+      ringColor: sleepHours >= 7 ? 'ring-primary/20' : 'ring-warning/20',
     },
   ];
 
   return (
-    <Card className="glass">
-      <CardContent className="p-3 sm:p-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-          {stats.map(({ label, value, icon: Icon, color, bgColor }) => (
-            <div key={label} className="text-center">
-              <div className={cn("inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full mb-1.5 sm:mb-2", bgColor)}>
-                <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", color)} />
+    <Card className="overflow-hidden border-0 bg-gradient-to-br from-card/80 to-card shadow-xl backdrop-blur-sm">
+      <CardContent className="p-4 sm:p-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          {stats.map(({ label, value, icon: Icon, color, bgColor, ringColor }) => (
+            <div 
+              key={label} 
+              className="flex flex-col items-center text-center group"
+            >
+              <div className={cn(
+                "relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl mb-2 sm:mb-3",
+                "ring-1 transition-all duration-300",
+                bgColor,
+                ringColor,
+                "group-hover:scale-105 group-hover:shadow-md"
+              )}>
+                <Icon className={cn("h-5 w-5 sm:h-6 sm:w-6", color)} />
               </div>
-              <p className="text-lg sm:text-xl font-semibold font-display">{value}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">{label}</p>
+              <p className="text-xl sm:text-2xl font-bold font-display tracking-tight">{value}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide mt-0.5">{label}</p>
             </div>
           ))}
         </div>
