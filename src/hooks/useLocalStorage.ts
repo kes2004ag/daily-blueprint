@@ -126,6 +126,7 @@ export function useLocalFocusLogs() {
         category,
         minutes,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
       setLogs(prev => [...prev, newLog]);
     }
@@ -149,6 +150,7 @@ export function useLocalFocusLogs() {
         category,
         minutes,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
       setLogs(prev => [...prev, newLog]);
     }
@@ -194,6 +196,7 @@ export function useLocalPhoneUsage() {
         date,
         minutes,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
       setLogs(prev => [...prev, newLog]);
     }
@@ -240,6 +243,7 @@ export function useLocalHealthLogs() {
         date,
         ...data,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
       setLogs(prev => [...prev, newLog]);
     }
