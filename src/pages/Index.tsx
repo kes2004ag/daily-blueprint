@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { format, isToday, isBefore, startOfDay } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
 import { WallpaperContext } from '@/hooks/useWallpaperView';
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import {
   getTasksForDate,
+  getTasksByDateRange,
   createTask,
   updateTaskStatus,
   deleteTask,
@@ -78,8 +79,6 @@ const Index = ({ user, onSignOut }: IndexProps) => {
   const todayString = format(new Date(), 'yyyy-MM-dd');
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
   const isSelectedToday = isToday(selectedDate);
-  const isPastDate = isBefore(startOfDay(selectedDate), startOfDay(new Date()));
-
   // Load today's data
   const loadTodayData = async () => {
     try {
@@ -142,7 +141,7 @@ const Index = ({ user, onSignOut }: IndexProps) => {
         getFocusLogsByDateRange(startDate, endDate),
         getPhoneUsageByDateRange(startDate, endDate),
         getHealthLogsByDateRange(startDate, endDate),
-        getTasksForDate(new Date()), // We'll need to update this to get all tasks
+        getTasksByDateRange(startDate, endDate),
       ]);
 
       setAllFocusLogs(focusLogs);
@@ -376,7 +375,7 @@ const Index = ({ user, onSignOut }: IndexProps) => {
   };
 
   // Health handler
-  const handleSetHealth = async (data: { sleep_hours?: number; running_km?: number; running_minutes?: number; weight_kg?: number }) => {
+  const handleSetHealth = async (data: { sleep_hours?: number; running_km?: number; running_minutes?: number; steps?: number; weight_kg?: number }) => {
     try {
       const health = await upsertHealthLog(isSelectedToday ? new Date() : selectedDate, data);
       if (isSelectedToday) {
@@ -490,7 +489,7 @@ const Index = ({ user, onSignOut }: IndexProps) => {
 
   return (
     <div 
-      className="min-h-screen pb-24 md:pb-6"
+      className="min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6 overflow-x-hidden"
       style={{
         backgroundImage: currentView === 'today' 
           ? 'url(/today.jpg)'
@@ -615,11 +614,6 @@ const Index = ({ user, onSignOut }: IndexProps) => {
                 <h2 className="font-display font-semibold text-base sm:text-lg">
                   {isSelectedToday ? "Today's Log" : format(selectedDate, 'MMMM d, yyyy')}
                 </h2>
-                {isPastDate && !isSelectedToday && (
-                  <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                    Read-only
-                  </span>
-                )}
               </div>
 
               {/* Summary for selected date */}
@@ -640,24 +634,20 @@ const Index = ({ user, onSignOut }: IndexProps) => {
                     onToggleTask={handleToggleTask}
                     onEditTask={handleEditTask}
                     onDeleteTask={handleDeleteTask}
-                    isReadOnly={isPastDate && !isSelectedToday}
                   />
                   <HealthTracker
                     healthData={selectedHealth ?? undefined}
                     onSetHealth={handleSetHealth}
-                    isReadOnly={isPastDate && !isSelectedToday}
                   />
                 </div>
                 <div className="space-y-4 sm:space-y-6">
                   <FocusTracker
                     logs={selectedFocusLogs}
                     onSetFocusTime={handleSetFocusTime}
-                    isReadOnly={isPastDate && !isSelectedToday}
                   />
                   <PhoneUsageTracker
                     minutes={selectedPhoneUsage}
                     onSetUsage={handleSetPhoneUsage}
-                    isReadOnly={isPastDate && !isSelectedToday}
                   />
                 </div>
               </div>

@@ -19,16 +19,16 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 md:static md:bottom-auto z-50">
-      <div className="bg-card/95 backdrop-blur-xl border-t md:border-t-0 md:border-b border-border/50 shadow-xl md:shadow-none">
+      <div className="bg-card/95 backdrop-blur-xl border-t md:border-t-0 md:border-b border-border/50 shadow-xl md:shadow-none pb-[max(env(safe-area-inset-bottom),0.2rem)] md:pb-0">
         <div className="max-w-4xl mx-auto px-2 sm:px-4">
-          <div className="flex items-center justify-around md:justify-start md:gap-1 py-2 sm:py-3">
+          <div className="grid grid-cols-4 md:flex md:items-center md:justify-start md:gap-1 py-2 sm:py-3 gap-1">
             {navItems.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => onViewChange(id)}
                 className={cn(
                   "relative flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2",
-                  "h-auto py-2.5 px-4 md:px-5 min-w-[72px] md:min-w-0",
+                  "h-auto py-2.5 px-2 md:px-5 min-w-0 w-full md:w-auto",
                   "rounded-xl md:rounded-lg",
                   "transition-all duration-200 ease-out",
                   "touch-manipulation select-none",
@@ -43,7 +43,7 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
                   currentView === id && "scale-110"
                 )} />
                 <span className={cn(
-                  "text-[11px] md:text-sm font-medium",
+                  "text-[10px] sm:text-[11px] md:text-sm font-medium truncate",
                   currentView === id && "font-semibold"
                 )}>
                   {label}

@@ -22,7 +22,8 @@ interface FocusTrackerProps {
 }
 
 const CATEGORIES: { id: FocusCategory; label: string; icon: React.ReactNode; colorClass: string; bgClass: string }[] = [
-  { id: 'GATE', label: 'GATE', icon: <BookOpen className="h-4 w-4" />, colorClass: 'text-blue-600 dark:text-blue-400', bgClass: 'bg-blue-500/10 border-blue-500/20' },
+  { id: 'GATE', label: 'GATE', icon: <BookOpen className="h-4 w-4" />, colorClass: 'text-violet-600 dark:text-violet-400', bgClass: 'bg-violet-500/10 border-violet-500/20' },
+  { id: 'DSA', label: 'DSA', icon: <BookOpen className="h-4 w-4" />, colorClass: 'text-blue-600 dark:text-blue-400', bgClass: 'bg-blue-500/10 border-blue-500/20' },
   { id: 'DEVELOPMENT', label: 'Development', icon: <Code className="h-4 w-4" />, colorClass: 'text-emerald-600 dark:text-emerald-400', bgClass: 'bg-emerald-500/10 border-emerald-500/20' },
   { id: 'RESEARCH', label: 'Research', icon: <FlaskConical className="h-4 w-4" />, colorClass: 'text-purple-600 dark:text-purple-400', bgClass: 'bg-purple-500/10 border-purple-500/20' },
   { id: 'COLLEGE', label: 'College', icon: <GraduationCap className="h-4 w-4" />, colorClass: 'text-amber-600 dark:text-amber-400', bgClass: 'bg-amber-500/10 border-amber-500/20' },

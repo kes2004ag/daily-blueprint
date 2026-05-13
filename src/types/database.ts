@@ -52,7 +52,7 @@ export interface Task {
   completed_at?: string | null;
 }
 
-export type FocusCategory = 'GATE' | 'DEVELOPMENT' | 'RESEARCH' | 'COLLEGE';
+export type FocusCategory = 'GATE' | 'DSA' | 'DEVELOPMENT' | 'RESEARCH' | 'COLLEGE';
 
 export interface FocusLog {
   id: string;
@@ -83,6 +83,7 @@ export interface HealthLog {
   sleep_hours?: number | null;
   running_km?: number | null;
   running_minutes?: number | null;
+  steps?: number | null;
   weight_kg?: number | null;
   created_at: string;
   updated_at: string;

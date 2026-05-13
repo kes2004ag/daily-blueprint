@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { FocusLog, PhoneUsageLog, HealthLog, Task } from '@/types/database';
+import type { FocusCategory, FocusLog, PhoneUsageLog, HealthLog, Task } from '@/types/database';
 
 interface ChartsViewProps {
   focusLogs: FocusLog[];
@@ -23,11 +23,20 @@ interface ChartsViewProps {
 }
 
 const FOCUS_COLORS = {
-  GATE: 'hsl(220, 70%, 50%)',
+  GATE: 'hsl(270, 85%, 55%)',
+  DSA: 'hsl(220, 70%, 50%)',
   DEVELOPMENT: 'hsl(150, 50%, 40%)',
   RESEARCH: 'hsl(280, 50%, 50%)',
   COLLEGE: 'hsl(35, 80%, 50%)',
 };
+
+const FOCUS_CATEGORIES: { key: FocusCategory; label: string }[] = [
+  { key: 'GATE', label: 'GATE' },
+  { key: 'DSA', label: 'DSA' },
+  { key: 'DEVELOPMENT', label: 'Development' },
+  { key: 'RESEARCH', label: 'Research' },
+  { key: 'COLLEGE', label: 'College' },
+];
 
 export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsViewProps) {
   // State for month/year selection
@@ -81,12 +90,21 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
     .filter(log => isSelectedMonth(log.date))
     .reduce((acc, log) => {
       if (!acc[log.date]) {
-        acc[log.date] = { date: log.date, GATE: 0, DEVELOPMENT: 0, RESEARCH: 0, COLLEGE: 0, total: 0 };
+        acc[log.date] = { date: log.date, GATE: 0, DSA: 0, DEVELOPMENT: 0, RESEARCH: 0, COLLEGE: 0, total: 0 };
       }
       acc[log.date][log.category] = log.minutes;
       acc[log.date].total += log.minutes;
       return acc;
     }, {} as Record<string, any>);
+
+  const focusTotals = FOCUS_CATEGORIES.reduce((acc, { key }) => {
+    acc[key] = focusLogs
+      .filter(log => isSelectedMonth(log.date) && log.category === key)
+      .reduce((sum, log) => sum + log.minutes, 0);
+    return acc;
+  }, {} as Record<FocusCategory, number>);
+
+  const totalFocusMinutes = Object.values(focusTotals).reduce((sum, value) => sum + value, 0);
 
   const focusChartData = Object.values(focusByDate)
     .sort((a: any, b: any) => a.date.localeCompare(b.date))
@@ -132,6 +150,15 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
       kg: log.weight_kg,
     }));
 
+  // Steps trend
+  const stepsChartData = healthLogs
+    .filter(l => l.steps !== undefined && l.steps > 0 && isSelectedMonth(l.date))
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map(log => ({
+      date: log.date.slice(5),
+      steps: log.steps,
+    }));
+
   // Task completion data
   const tasksByDate = tasks
     .filter(task => isSelectedMonth(task.active_date))
@@ -158,7 +185,7 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
   return (
     <Card className="card-hover">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <CardTitle className="font-display">Analytics</CardTitle>
           <div className="flex items-center gap-2">
             <Button
@@ -168,7 +195,7 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm font-medium min-w-[120px] text-center">{monthName}</span>
+            <span className="text-xs sm:text-sm font-medium min-w-[96px] sm:min-w-[120px] text-center">{monthName}</span>
             <Button
               variant="outline"
               size="sm"
@@ -181,15 +208,27 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="focus" className="space-y-4">
-          <TabsList className="grid grid-cols-4 w-full">
-            <TabsTrigger value="focus">Focus</TabsTrigger>
-            <TabsTrigger value="tasks">Tasks</TabsTrigger>
-            <TabsTrigger value="phone">Phone</TabsTrigger>
-            <TabsTrigger value="health">Health</TabsTrigger>
+          <TabsList className="grid grid-cols-4 w-full h-auto p-1 gap-1">
+            <TabsTrigger value="focus" className="text-[11px] sm:text-sm px-1.5 sm:px-3">Focus</TabsTrigger>
+            <TabsTrigger value="tasks" className="text-[11px] sm:text-sm px-1.5 sm:px-3">Tasks</TabsTrigger>
+            <TabsTrigger value="phone" className="text-[11px] sm:text-sm px-1.5 sm:px-3">Phone</TabsTrigger>
+            <TabsTrigger value="health" className="text-[11px] sm:text-sm px-1.5 sm:px-3">Health</TabsTrigger>
           </TabsList>
 
           <TabsContent value="focus" className="space-y-4">
-            <div className="h-64">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="rounded-xl border border-border/60 bg-card/60 p-3 lg:col-span-1">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Total Focus</p>
+                <p className="mt-1 text-lg font-bold">{totalFocusMinutes}m</p>
+              </div>
+              {FOCUS_CATEGORIES.map(({ key, label }) => (
+                <div key={key} className="rounded-xl border border-border/60 bg-card/60 p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+                  <p className="mt-1 text-lg font-bold" style={{ color: FOCUS_COLORS[key] }}>{focusTotals[key]}m</p>
+                </div>
+              ))}
+            </div>
+            <div className="h-56 sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={focusChartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -205,6 +244,7 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
                   />
                   <Legend />
                   <Line type="monotone" dataKey="GATE" stroke={FOCUS_COLORS.GATE} strokeWidth={2} name="GATE" dot={{ fill: FOCUS_COLORS.GATE }} />
+                  <Line type="monotone" dataKey="DSA" stroke={FOCUS_COLORS.DSA} strokeWidth={2} name="DSA" dot={{ fill: FOCUS_COLORS.DSA }} />
                   <Line type="monotone" dataKey="DEVELOPMENT" stroke={FOCUS_COLORS.DEVELOPMENT} strokeWidth={2} name="Dev" dot={{ fill: FOCUS_COLORS.DEVELOPMENT }} />
                   <Line type="monotone" dataKey="RESEARCH" stroke={FOCUS_COLORS.RESEARCH} strokeWidth={2} name="Research" dot={{ fill: FOCUS_COLORS.RESEARCH }} />
                   <Line type="monotone" dataKey="COLLEGE" stroke={FOCUS_COLORS.COLLEGE} strokeWidth={2} name="College" dot={{ fill: FOCUS_COLORS.COLLEGE }} />
@@ -214,7 +254,7 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
           </TabsContent>
 
           <TabsContent value="tasks" className="space-y-4">
-            <div className="h-64">
+            <div className="h-56 sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={taskChartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -236,7 +276,7 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
           </TabsContent>
 
           <TabsContent value="phone" className="space-y-4">
-            <div className="h-64">
+            <div className="h-56 sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={phoneChartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -263,7 +303,7 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
           </TabsContent>
 
           <TabsContent value="health" className="space-y-4">
-            <div className="h-64">
+            <div className="h-56 sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={sleepChartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -289,7 +329,7 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
               </ResponsiveContainer>
             </div>
             {runningChartData.length > 0 && (
-              <div className="h-48">
+              <div className="h-44 sm:h-48">
                 <p className="text-sm text-muted-foreground mb-2">Running Distance</p>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={runningChartData}>
@@ -310,7 +350,7 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
               </div>
             )}
             {weightChartData.length > 0 && (
-              <div className="h-48">
+              <div className="h-44 sm:h-48">
                 <p className="text-sm text-muted-foreground mb-2">Body Weight</p>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={weightChartData}>
@@ -330,6 +370,31 @@ export function ChartsView({ focusLogs, phoneLogs, healthLogs, tasks }: ChartsVi
                 </ResponsiveContainer>
               </div>
             )}
+            <div className="h-44 sm:h-48">
+              <p className="text-sm text-muted-foreground mb-2">Daily Steps</p>
+              {stepsChartData.length === 0 ? (
+                <div className="h-full rounded-lg border border-dashed border-border/60 flex items-center justify-center text-sm text-muted-foreground">
+                  No step data for this month yet.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={stepsChartData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="date" className="text-xs" />
+                    <YAxis className="text-xs" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                      }}
+                      formatter={(value: number) => [`${value.toLocaleString()} steps`, 'Steps']}
+                    />
+                    <Line type="monotone" dataKey="steps" stroke="hsl(var(--accent))" strokeWidth={2} name="Steps" dot={{ fill: 'hsl(var(--accent))' }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>

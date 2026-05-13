@@ -68,6 +68,26 @@ export async function getTasksForDate(date: Date): Promise<Task[]> {
   return data || [];
 }
 
+export async function getTasksByDateRange(
+  startDate: Date,
+  endDate: Date
+): Promise<Task[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', user.id)
+    .gte('active_date', format(startDate, 'yyyy-MM-dd'))
+    .lte('active_date', format(endDate, 'yyyy-MM-dd'))
+    .order('active_date', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
 export async function createTask(
   title: string,
   date: Date
@@ -344,6 +364,8 @@ export async function upsertHealthLog(
     sleep_hours?: number;
     running_km?: number;
     running_minutes?: number;
+    steps?: number;
+    weight_kg?: number;
   }
 ): Promise<HealthLog> {
   const { data: { user } } = await supabase.auth.getUser();

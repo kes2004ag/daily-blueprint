@@ -107,7 +107,7 @@ export function MonthlyTargets({
   return (
     <Card className="card-hover">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
             <CardTitle className="font-display">Monthly Goals</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
@@ -115,7 +115,7 @@ export function MonthlyTargets({
               {!isCurrentMonth && ' (Past)'}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -123,7 +123,7 @@ export function MonthlyTargets({
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm font-medium min-w-[100px] text-center text-muted-foreground">
+            <span className="text-sm font-medium min-w-[88px] text-center text-muted-foreground">
               {completedCount}/{targets.length}
             </span>
             <Button
@@ -248,7 +248,7 @@ export function MonthlyTargets({
                       )}
                     </div>
                     {isCurrentMonth && (
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 shrink-0">
                         <button
                           onClick={() => handleEditTarget(target.id)}
                           className="text-muted-foreground hover:text-primary p-1"

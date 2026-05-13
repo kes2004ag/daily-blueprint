@@ -47,6 +47,7 @@
 
     /* Focus category colors - vibrant palette */
     --focus-gate: 270 85% 55%;
+    --focus-dsa: 220 70% 50%;
     --focus-development: 185 100% 45%;
     --focus-research: 280 90% 60%;
     --focus-college: 35 95% 55%;
@@ -142,6 +143,10 @@
 @layer components {
   .focus-category-gate {
     @apply bg-violet-500/10 text-violet-400 border-violet-500/20;
+  }
+
+  .focus-category-dsa {
+    @apply bg-blue-500/10 text-blue-400 border-blue-500/20;
   }
   
   .focus-category-development {

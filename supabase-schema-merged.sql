@@ -42,7 +42,7 @@ CREATE TABLE focus_logs (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   day_id UUID REFERENCES days(id) ON DELETE CASCADE NOT NULL,
   date DATE NOT NULL,
-  category TEXT NOT NULL CHECK (category IN ('GATE', 'DEVELOPMENT', 'RESEARCH', 'COLLEGE')),
+  category TEXT NOT NULL CHECK (category IN ('GATE', 'DSA', 'DEVELOPMENT', 'RESEARCH', 'COLLEGE')),
   minutes INTEGER NOT NULL CHECK (minutes >= 0),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -63,7 +63,7 @@ CREATE TABLE phone_usage_logs (
   CONSTRAINT unique_phone_usage_user_date UNIQUE(user_id, date)
 );
 
--- Health logs table (sleep + running + weight)
+-- Health logs table (sleep + running + steps + weight)
 CREATE TABLE health_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -72,6 +72,7 @@ CREATE TABLE health_logs (
   sleep_hours DECIMAL(4,2) CHECK (sleep_hours >= 0 AND sleep_hours <= 24),
   running_km DECIMAL(6,2) CHECK (running_km >= 0),
   running_minutes INTEGER CHECK (running_minutes >= 0),
+  steps INTEGER CHECK (steps >= 0),
   weight_kg DECIMAL(6,2) CHECK (weight_kg >= 0 AND weight_kg <= 500),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

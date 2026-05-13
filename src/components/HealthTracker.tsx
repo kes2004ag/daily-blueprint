@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Moon, Activity, Scale, Heart } from 'lucide-react';
+import { Moon, Activity, Scale, Heart, Footprints } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,16 +9,18 @@ import type { HealthLog } from '@/types/database';
 
 interface HealthTrackerProps {
   healthData: HealthLog | undefined;
-  onSetHealth: (data: { sleep_hours?: number; running_km?: number; running_minutes?: number; weight_kg?: number }) => void;
+  onSetHealth: (data: { sleep_hours?: number; running_km?: number; running_minutes?: number; steps?: number; weight_kg?: number }) => void;
   isReadOnly?: boolean;
 }
 
 export function HealthTracker({ healthData, onSetHealth, isReadOnly = false }: HealthTrackerProps) {
   const [isEditingSleep, setIsEditingSleep] = useState(false);
   const [isEditingRunning, setIsEditingRunning] = useState(false);
+  const [isEditingSteps, setIsEditingSteps] = useState(false);
   const [isEditingWeight, setIsEditingWeight] = useState(false);
   const [sleepInput, setSleepInput] = useState(healthData?.sleep_hours?.toString() ?? '');
   const [runningKmInput, setRunningKmInput] = useState(healthData?.running_km?.toString() ?? '');
+  const [stepsInput, setStepsInput] = useState(healthData?.steps?.toString() ?? '');
   const [weightInput, setWeightInput] = useState(healthData?.weight_kg?.toString() ?? '');
 
   const handleSaveSleep = () => {
@@ -31,6 +33,12 @@ export function HealthTracker({ healthData, onSetHealth, isReadOnly = false }: H
     const km = parseFloat(runningKmInput) || 0;
     onSetHealth({ ...healthData, running_km: km });
     setIsEditingRunning(false);
+  };
+
+  const handleSaveSteps = () => {
+    const steps = parseInt(stepsInput) || 0;
+    onSetHealth({ ...healthData, steps });
+    setIsEditingSteps(false);
   };
 
   const handleSaveWeight = () => {
@@ -48,6 +56,7 @@ export function HealthTracker({ healthData, onSetHealth, isReadOnly = false }: H
 
   const sleepHours = healthData?.sleep_hours ?? 0;
   const runningKm = healthData?.running_km ?? 0;
+  const steps = healthData?.steps ?? 0;
   const sleepQuality = getSleepQuality(sleepHours);
 
   const healthItems = [
@@ -101,6 +110,23 @@ export function HealthTracker({ healthData, onSetHealth, isReadOnly = false }: H
       onSave: handleSaveWeight,
       placeholder: 'Kilograms',
       step: '0.1',
+    },
+    {
+      id: 'steps',
+      label: 'Steps',
+      icon: Footprints,
+      iconColor: 'text-cyan-500',
+      bgColor: 'bg-cyan-500/10 border-cyan-500/20',
+      value: steps,
+      displayValue: steps > 0 ? `${steps.toLocaleString()}` : 'Not set',
+      badge: steps >= 10000 ? { label: '10k+', color: 'text-success bg-success/10 border-success/25' } : null,
+      isEditing: isEditingSteps,
+      setIsEditing: setIsEditingSteps,
+      inputValue: stepsInput,
+      setInputValue: setStepsInput,
+      onSave: handleSaveSteps,
+      placeholder: 'Steps',
+      step: '1',
     },
   ];
 
