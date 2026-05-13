@@ -60,9 +60,34 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+## Deploy on Vercel
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+This project is ready to deploy on Vercel as a Vite SPA.
+
+### 1. Import the repository
+
+1. Open Vercel and click **Add New -> Project**
+2. Import this GitHub repository
+3. Keep defaults:
+	- Framework preset: `Vite`
+	- Build command: `npm run build`
+	- Output directory: `dist`
+
+### 2. Add environment variables
+
+In Vercel Project Settings -> Environment Variables, add:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+
+### 3. Deploy
+
+Click **Deploy**. Vercel will run `npm install` and `npm run build`.
+
+### Notes
+
+- Client-side routes are handled using `vercel.json` rewrites.
+- If env vars are updated later, redeploy the project.
 
 ## Can I connect a custom domain to my Lovable project?
 
