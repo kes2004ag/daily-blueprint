@@ -255,31 +255,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Function to carry forward incomplete tasks
 CREATE OR REPLACE FUNCTION carry_forward_tasks(p_user_id UUID, p_from_date DATE, p_to_date DATE)
 RETURNS void AS $$
-DECLARE
-  v_to_day_id UUID;
-  v_task RECORD;
 BEGIN
-  -- Get or create the target day
-  v_to_day_id := get_or_create_day(p_user_id, p_to_date);
-  
-  -- Copy incomplete tasks
-  FOR v_task IN 
-    SELECT * FROM tasks 
-    WHERE user_id = p_user_id 
-      AND active_date = p_from_date 
-      AND status = 'pending'
-  LOOP
-    -- Check if task already exists for the target date
-    IF NOT EXISTS (
-      SELECT 1 FROM tasks 
-      WHERE user_id = p_user_id 
-        AND active_date = p_to_date 
-        AND title = v_task.title 
-        AND origin_date = v_task.origin_date
-    ) THEN
-      INSERT INTO tasks (user_id, day_id, title, status, origin_date, active_date)
-      VALUES (p_user_id, v_to_day_id, v_task.title, 'pending', v_task.origin_date, p_to_date);
-    END IF;
-  END LOOP;
+  -- Daily tasks are intentionally not carried forward.
+  RETURN;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -19,38 +19,9 @@ export function useLocalTasks() {
     localStorage.setItem('lifetrack-tasks', JSON.stringify(tasks));
   }, [tasks]);
 
-  // Carry forward incomplete tasks from previous days
+  // Carry forward is disabled for demo mode as well.
   const carryForwardTasks = useCallback(() => {
-    const today = getTodayString();
-    const updatedTasks = [...tasks];
-    let hasChanges = false;
-
-    tasks.forEach(task => {
-      if (
-        task.status === 'pending' &&
-        task.active_date !== today &&
-        isBefore(parseISO(task.active_date), startOfDay(new Date()))
-      ) {
-        // Check if already carried forward to today
-        const alreadyCarried = tasks.some(
-          t => t.origin_date === task.origin_date && t.active_date === today && t.title === task.title
-        );
-        
-        if (!alreadyCarried) {
-          updatedTasks.push({
-            ...task,
-            id: generateId(),
-            active_date: today,
-            created_at: new Date().toISOString(),
-          });
-          hasChanges = true;
-        }
-      }
-    });
-
-    if (hasChanges) {
-      setTasks(updatedTasks);
-    }
+    return;
   }, [tasks]);
 
   useEffect(() => {
